@@ -23,3 +23,23 @@ is done, tick it here and update the status list in the review record (and in
       and notice digest cross-checks, fixed-string matching.
 - [x] 8. P3 Core-split checklist: dependency wiring, adapter tests, convention
       scripts, declaration exports, and the endpoint's documented exception.
+
+## Round 2
+
+Source: `2026-09-30-codex-gpt-6-astra-followup.md`. Same rules: one commit per
+item, tick here and update that record's status list when done.
+
+- [ ] 9. P1 Enforce consent at Boomerang's final send boundary so a send queued
+      before withdrawal is never transmitted; prove it with a control.
+- [ ] 10. P1 Delayed beacon: deliver synchronously when the timer fires and
+      track actual delivery, so an exit after expiry cannot mislabel the visit;
+      document the exit-before-load bundle limitation.
+- [ ] 11. P2 Declaration scanner: import attributes, `import x = require()`,
+      string-aware comment stripping, nested adapter files; self-tests; honest
+      README wording.
+- [ ] 12. P2 Minimum-delay assertion on collector receipt timestamps; drain
+      late traffic between local-collector tests.
+- [ ] 13. P2 Early-decision test that calls the real helper before the loader;
+      hostname fixture with host-only and parent-domain cookie controls.
+- [ ] 14. P3 Single credential step in the release workflow; status and
+      documentation consistency; README limitations paragraph.
