@@ -41,5 +41,17 @@ item, tick here and update that record's status list when done.
       late traffic between local-collector tests.
 - [x] 13. P2 Early-decision test that calls the real helper before the loader;
       hostname fixture with host-only and parent-domain cookie controls.
-- [ ] 14. P3 Single credential step in the release workflow; status and
+- [x] 14. P3 Single credential step in the release workflow; status and
       documentation consistency; README limitations paragraph.
+
+Observations made while working through round 2:
+
+- Codex's timer-expiry mislabel scenario (finding 2 of the follow-up) did not
+  reproduce in Chromium: with the send queued and not yet run, leaving the
+  page already produced a page-load beacon followed by an unload beacon on the
+  previous plugin. The explicit flush is kept as a guard.
+- A forced `BOOMR.sendBeacon()` after the page-load beacon sends nothing even
+  with consent, because RT resets its completion flag; the test that relied on
+  it is annotated, and the queued-send proof uses the delayed fixture with
+  Boomerang's scheduler captured.
+- All round 2 items were completed on 2026-09-30.

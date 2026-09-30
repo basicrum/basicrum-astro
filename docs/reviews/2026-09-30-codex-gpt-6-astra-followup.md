@@ -48,7 +48,10 @@ Updated as items are resolved. Dates are resolution dates.
   exists and shows that defining it later replays nothing. A browser test
   visits the consent fixture as `site.basicrum.localhost`, seeds a host-only
   and a parent-domain cookie, and shows withdrawal removes both.
-- P3 status documentation overstates credential isolation and completion: open.
+- P3 status documentation overstates credential isolation and completion:
+  done 2026-09-30. The publish step is the only step that receives the npm
+  credential; the first record's status header no longer says all findings
+  are open; the entries above carry their qualifications.
 
 ## Verdict
 

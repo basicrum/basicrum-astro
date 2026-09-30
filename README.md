@@ -127,7 +127,15 @@ With a positive `waitAfterOnloadMs`, Boomerang holds every beacon back until the
 first one is sent. When the visitor leaves while the first beacon is still
 pending, during the delay or right after it, that beacon is sent on `pagehide`
 before the regular unload beacon, so short visits are still measured. A withdrawal during the delay cancels the pending beacon.
-Restoration from the back-forward cache is not covered by the tests.
+
+Known limitations of the bundled build, with or without a delay:
+
+- A visitor who leaves before the `load` event produces no beacon. The bundled
+  Continuity plugin completes only at page ready, so Boomerang withholds the
+  abandoned-page beacon.
+- A page that is hidden and then discarded without a `pagehide` event loses a
+  pending delayed beacon.
+- Restoration from the back-forward cache is not covered by the tests.
 
 The generated configuration sets `p_gen: "astro"`, disables XHR instrumentation,
 and retains the WordPress defaults for secure, SameSite=Strict cookies. These are

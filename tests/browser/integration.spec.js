@@ -135,6 +135,9 @@ test("withdrawal after initialization stops further beacons and clears cookies",
   await page.getByRole("button", { name: "Deny", exact: true }).click();
   expect(await measurementCookies(context)).toEqual([]);
   const before = state.beacons.length;
+  // A forced sendBeacon() after the page-load beacon sends nothing even with
+  // consent (RT resets its completion), so this is not the blocking proof;
+  // the local-collector tests cover a send queued before withdrawal.
   await page.evaluate(() => window.BOOMR.sendBeacon());
   await page.getByRole("button", { name: "Grant", exact: true }).click();
   await replayBootstrap(page);
