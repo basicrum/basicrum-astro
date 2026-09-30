@@ -65,12 +65,44 @@ function declarationSpecifiers(source) {
   for (const match of source.matchAll(/^[ \t]*\/\/\/\s*<reference\s+(?:path|types)\s*=\s*["']([^"'\n]+)["']/gm)) {
     found.push({ specifier: match[1], kind: "reference" });
   }
-  const code = stripComments(source);
-  for (const match of code.matchAll(/\bfrom\s*["']([^"'\n]+)["']/g)) found.push({ specifier: match[1], kind: "static" });
-  for (const match of code.matchAll(/\bimport\s*["']([^"'\n]+)["']/g)) found.push({ specifier: match[1], kind: "side-effect" });
-  for (const match of code.matchAll(/\bimport\s*\(\s*["']([^"'\n]+)["']\s*(?:,[^)]*)?\)/g)) found.push({ specifier: match[1], kind: "dynamic" });
-  for (const match of code.matchAll(/=\s*require\s*\(\s*["']([^"'\n]+)["']\s*\)/g)) found.push({ specifier: match[1], kind: "static" });
+  const { code, strings } = tokenizeStrings(stripComments(source));
+  const text = (index) => strings[Number(index)];
+  for (const match of code.matchAll(/\bfrom\s*["'`]@@(\d+)@@["'`]/g)) found.push({ specifier: text(match[1]), kind: "static" });
+  for (const match of code.matchAll(/\bimport\s*["'`]@@(\d+)@@["'`]/g)) found.push({ specifier: text(match[1]), kind: "side-effect" });
+  for (const match of code.matchAll(/\bimport\s*\(\s*["'`]@@(\d+)@@["'`]\s*(?:,[^)]*)?\)/g)) found.push({ specifier: text(match[1]), kind: "dynamic" });
+  for (const match of code.matchAll(/=\s*require\s*\(\s*["'`]@@(\d+)@@["'`]\s*\)/g)) found.push({ specifier: text(match[1]), kind: "static" });
   return found;
+}
+
+/** Replace each string literal's content with an index, so text inside a
+ *  string cannot look like an import form; the table maps indexes back. */
+function tokenizeStrings(code) {
+  const strings = [];
+  let out = "";
+  let quote = null;
+  let current = "";
+  for (let i = 0; i < code.length; i += 1) {
+    const ch = code[i];
+    if (quote) {
+      if (ch === "\\") {
+        current += ch + (code[i + 1] ?? "");
+        i += 1;
+      } else if (ch === quote) {
+        out += `@@${strings.length}@@${quote}`;
+        strings.push(current);
+        quote = null;
+        current = "";
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"' || ch === "'" || ch === "`") {
+      quote = ch;
+      out += ch;
+    } else {
+      out += ch;
+    }
+  }
+  return { code: out, strings };
 }
 
 /** Source text with comments blanked out, for checks that must ignore prose. */
