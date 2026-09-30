@@ -22,7 +22,17 @@ Updated as items are resolved. Dates are resolution dates.
   loader has cleared the configuration, so `real_sendBeacon` drops queued
   sends. A local-collector test queues a send, withdraws, and shows no
   transmission, with a control proving the forced send otherwise arrives.
-- P1 delay fix still loses or mislabels early-exit measurements: open.
+- P1 delay fix still loses or mislabels early-exit measurements: addressed
+  2026-09-30, with a qualification. The timer-expiry window did not reproduce
+  in Chromium: with the send queued and not yet run, leaving the page already
+  produced a page-load beacon followed by an unload beacon on the previous
+  plugin as well (probe on the delayed fixture). The plugin now tracks delivery
+  through Boomerang's `beacon` event and flushes explicitly whenever the first
+  beacon is still pending at exit, and a test pins the two-beacon outcome.
+  The exit-before-`load` loss is the vendored bundle's behaviour (Continuity
+  completes only at page ready) and is documented as a limitation. The
+  during-delay exit was re-verified against the pre-fix plugin: it lost the
+  visit entirely (zero beacons), so that part of the fix is proven.
 - P2 declaration imports bypass both boundary tests: open.
 - P2 minimum-delay test measures observation time: open.
 - P2 some consent claims still lack effective regression tests: open.

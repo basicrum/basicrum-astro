@@ -284,6 +284,19 @@ test.describe("unload traffic captured by a local collector", () => {
     expect(state.errors).toEqual([]);
   });
 
+  test("leaving after expiry with the send still queued sends the first beacon, then the unload beacon", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await queueFirstBeaconAtExpiry(page, request, since);
+    await page.getByRole("link", { name: "Next page" }).click();
+    await expect(page.getByRole("heading", { name: "Next page" })).toBeVisible();
+    await expect.poll(() => collected(request, "local-delayed-site", since)).toHaveLength(2);
+    const beacons = await collected(request, "local-delayed-site", since);
+    expect(beacons.filter((beacon) => !("rt.quit" in beacon))).toHaveLength(1);
+    expect(beacons.filter((beacon) => "rt.quit" in beacon)).toHaveLength(1);
+    expect(state.errors).toEqual([]);
+  });
+
   test("the first beacon waits for the configured delay", async ({ page, request }) => {
     const state = await observe(page);
     const since = Date.now();

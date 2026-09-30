@@ -124,9 +124,9 @@ A production build also contains monitoring when served in a local preview unles
 you build with `enabled: false`.
 
 With a positive `waitAfterOnloadMs`, Boomerang holds every beacon back until the
-first one is sent. When the visitor leaves during the delay, the pending first
-beacon is sent on `pagehide` before the regular unload beacon, so short visits
-are still measured. A withdrawal during the delay cancels the pending beacon.
+first one is sent. When the visitor leaves while the first beacon is still
+pending, during the delay or right after it, that beacon is sent on `pagehide`
+before the regular unload beacon, so short visits are still measured. A withdrawal during the delay cancels the pending beacon.
 Restoration from the back-forward cache is not covered by the tests.
 
 The generated configuration sets `p_gen: "astro"`, disables XHR instrumentation,
