@@ -1,0 +1,53 @@
+{
+  "name": "@basicrum/astro",
+  "version": "0.1.0",
+  "description": "Basicrum real user monitoring for Astro with standard and consent-controlled loaders.",
+  "type": "module",
+  "license": "GPL-2.0-or-later",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./client": {
+      "types": "./src/client.d.ts",
+      "default": "./src/client.js"
+    }
+  },
+  "files": [
+    "src",
+    "vendor",
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "peerDependencies": {
+    "astro": "^7.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/node": "11.1.6",
+    "@playwright/test": "1.63.0",
+    "astro": "7.3.5",
+    "typescript": "7.0.2"
+  },
+  "scripts": {
+    "test": "npm run typecheck && npm run test:unit && npm run test:browser",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:browser": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "example:dev": "astro dev --root examples/basic",
+    "example:build": "astro build --root examples/basic",
+    "test:integration": "playwright test --project browser",
+    "test:e2e": "playwright test --project e2e"
+  },
+  "keywords": [
+    "astro-integration",
+    "astro",
+    "basicrum",
+    "boomerang",
+    "rum",
+    "performance"
+  ]
+}

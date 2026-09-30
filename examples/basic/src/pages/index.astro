@@ -1,0 +1,33 @@
+---
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="basicrum:page-type" content="home" />
+    <title>Basicrum Astro example</title>
+  </head>
+  <body>
+    <h1>Basicrum Astro example</h1>
+    <p>Configure BASICRUM_SITE_ID and BASICRUM_BEACON_URL to enable monitoring.</p>
+    <p>These buttons demonstrate the consent callbacks. Connect your consent manager in a real site.</p>
+    <button id="grant">Allow monitoring</button>
+    <button id="withdraw">Withdraw permission</button>
+    <p id="status" role="status"></p>
+    <script>
+      import { setConsent } from "../../../../src/client.js";
+      const status = document.querySelector("#status")!;
+      document.querySelector("#grant")!.addEventListener("click", () => {
+        status.textContent = setConsent(true)
+          ? "Permission granted. After a previous withdrawal, reload to resume monitoring."
+          : "Monitoring is disabled or the standard loader is selected.";
+      });
+      document.querySelector("#withdraw")!.addEventListener("click", () => {
+        status.textContent = setConsent(false)
+          ? "Permission withdrawn. Reload before granting again if collection had already started."
+          : "The consent loader is unavailable.";
+      });
+    </script>
+  </body>
+</html>

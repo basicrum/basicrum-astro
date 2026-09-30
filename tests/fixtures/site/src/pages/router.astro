@@ -1,0 +1,16 @@
+---
+import { ClientRouter } from "astro:transitions";
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:," />
+    <ClientRouter />
+    <title>Router fixture</title>
+  </head>
+  <body>
+    <h1>Router fixture</h1>
+    <a href={`${import.meta.env.BASE_URL}router-next/`}>Next route</a>
+  </body>
+</html>

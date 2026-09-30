@@ -1,0 +1,22 @@
+---
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:," />
+    <meta name="basicrum:page-type" content="home" />
+    <title>Basicrum browser fixture</title>
+  </head>
+  <body>
+    <h1>Basicrum browser fixture</h1>
+    <a href={`${import.meta.env.BASE_URL}next/`}>Next page</a>
+    <button id="grant">Grant</button>
+    <button id="deny">Deny</button>
+    <script>
+      import { setConsent } from "@basicrum/astro/client";
+      document.querySelector("#grant")!.addEventListener("click", () => setConsent(true));
+      document.querySelector("#deny")!.addEventListener("click", () => setConsent(false));
+    </script>
+  </body>
+</html>

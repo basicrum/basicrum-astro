@@ -1,0 +1,24 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "example-dev",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "BASICRUM_SITE_ID=demo-site",
+        "BASICRUM_BEACON_URL=https://collector.example.invalid/beacon",
+        "ASTRO_TELEMETRY_DISABLED=1",
+        "npx",
+        "astro",
+        "dev",
+        "--root",
+        "examples/basic",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "4321"
+      ],
+      "port": 4321
+    }
+  ]
+}
