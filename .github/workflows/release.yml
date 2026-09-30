@@ -112,25 +112,18 @@ jobs:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
 
-      - name: Check for an npm credential
-        id: npm
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -n "$NPM_TOKEN" ]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "NPM_TOKEN is not set; the npm publish step will be skipped."
-          fi
-
-      # Publish before creating the GitHub release so a publish failure leaves
-      # no half-release. A re-run after a successful publish skips this step.
+      # The only step that receives the npm credential. It publishes before
+      # the GitHub release is created, so a publish failure leaves no
+      # half-release, and it skips a version already on the registry so a
+      # re-run is safe. Without NPM_TOKEN it does nothing.
       - name: Publish to npm
-        if: steps.npm.outputs.configured == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN is not set; skipping npm publish."
+            exit 0
+          fi
           version="${GITHUB_REF_NAME#v}"
           if npm view "@basicrum/astro@${version}" version >/dev/null 2>&1; then
             echo "@basicrum/astro@${version} is already on the registry; skipping publish."
