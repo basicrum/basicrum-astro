@@ -28,9 +28,9 @@ An adapter does three things:
    `"."` (`index.js`), `"./consent"` (`consent.js`) and `"./vendor/*"`.
 2. Move `tests/unit/core.test.js` with it.
 3. In this package, change the three import sites:
-   - `src/index.js`: `./core/index.js` → `@basicrum/boomerang-core`
-   - `src/client.js` and `src/client.d.ts`: `./core/consent.js` → `@basicrum/boomerang-core/consent`
-   - `src/boomerang-endpoint.js`: the `?raw` import path → `@basicrum/boomerang-core/vendor/boomerang/...`
-   - `src/index.d.ts`: the type re-export → `@basicrum/boomerang-core`
+   - `src/index.js`: `./core/index.js` becomes `@basicrum/boomerang-core`
+   - `src/client.js` and `src/client.d.ts`: `./core/consent.js` becomes `@basicrum/boomerang-core/consent`
+   - `src/boomerang-endpoint.js`: the `?raw` import path becomes `@basicrum/boomerang-core/vendor/boomerang/...`
+   - `src/index.d.ts`: the type re-export becomes `@basicrum/boomerang-core`
 4. Delete `vendor` from this package's `files` list and drop the vendor
    provenance test from `tests/unit/integration.test.js` if it moved.

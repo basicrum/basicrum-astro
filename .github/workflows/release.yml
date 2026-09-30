@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Verify, package and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release version and conventions
+        env:
+          BASICRUM_RELEASE_TAG: ${{ github.ref_name }}
+        run: npm run conventions
+
+      - name: Check TypeScript declarations and lint
+        run: |
+          npm run typecheck
+          npm run lint
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Unit and browser tests
+        run: |
+          npm run test:unit
+          npm run test:browser
+
+      - name: Pack, install into a consumer and build
+        run: npm run verify:package
+
+      - name: Build release tarball and checksum
+        run: |
+          mkdir -p release
+          tarball=$(npm pack --pack-destination release --silent | tail -n 1)
+          (cd release && shasum -a 256 "$tarball" > "$tarball.sha256")
+          cat "release/$tarball.sha256"
+
+      - name: Create GitHub release and upload assets
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release/*.tgz
+            release/*.tgz.sha256
+
+      - name: Publish to npm
+        if: env.NPM_TOKEN != ''
+        env:
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+        run: npm publish release/*.tgz --provenance --access public

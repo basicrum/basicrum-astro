@@ -70,7 +70,7 @@ const devServer = await dev({
 for (const port of [43215, 43216]) {
   let ready = false;
   for (let attempt = 0; attempt < 100; attempt++) {
-    try { ready = (await fetch(`http://127.0.0.1:${port}/metrics/`)).ok; } catch {}
+    try { ready = (await fetch(`http://127.0.0.1:${port}/metrics/`)).ok; } catch { ready = false; }
     if (ready) break;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }

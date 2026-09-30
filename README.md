@@ -1,11 +1,14 @@
 # Basicrum for Astro
 
+[![CI](https://github.com/basicrum/basicrum-astro/actions/workflows/ci.yml/badge.svg)](https://github.com/basicrum/basicrum-astro/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/basicrum/basicrum-astro/actions/workflows/codeql.yml/badge.svg)](https://github.com/basicrum/basicrum-astro/actions/workflows/codeql.yml)
+
 An Astro integration that installs the existing Basicrum Boomerang loaders and
 self-hosts the matching Boomerang bundle. Choose either immediate collection or
 collection controlled by your site's consent manager.
 
-This package currently targets Astro 7 and Node.js 22.12 or later. It is local
-source code; it has not been published to npm.
+This package currently targets Astro 7 and Node.js 22.12 or later. The source
+lives on GitHub; it has not been published to npm yet.
 
 ## Install locally
 
@@ -166,14 +169,20 @@ hydration.
 npm ci
 npx playwright install chromium
 npm test
+npm run verify:package
 npm run example:build
 npm run example:dev
 ```
 
-`npm test` checks the TypeScript API, configuration and asset provenance, and
-browser behavior using the real packaged Boomerang build. Browser tests build
-local Astro fixtures and intercept all collector traffic; they never submit
-measurements to a production collector.
+`npm test` runs the repository conventions (`npm run conventions`: ASCII-only
+text, version metadata, Boomerang provenance), the TypeScript declaration check,
+ESLint, the unit tests and the browser tests. Browser tests build local Astro
+fixtures with the real packaged Boomerang build and intercept all collector
+traffic; they never submit measurements to a production collector.
+`npm run verify:package` packs the package, installs the tarball into a
+temporary Astro consumer and builds it with a non-root base; it needs network
+access. Repository invariants and the release procedure are in
+[AGENTS.md](./AGENTS.md).
 
 Browser tests are two Playwright projects:
 
@@ -211,6 +220,26 @@ The `vendor/` files are copied unchanged from the WordPress plugin. Their origin
 and SHA-256 digests are recorded in `vendor/provenance.json`. Update those files,
 the manifest, notices, and versioned asset references together when upgrading;
 run the consent withdrawal tests before releasing.
+
+## Releases
+
+Versions follow Semantic Versioning and are recorded in [CHANGELOG.md](./CHANGELOG.md).
+A release is a `vX.Y.Z` tag on `main` whose version matches `package.json`.
+Pushing the tag runs the Release workflow: it verifies the version, runs every
+check including the packed-consumer build, attaches the npm tarball and its
+SHA-256 to a GitHub Release, and publishes to npm only when the `NPM_TOKEN`
+repository secret is configured.
+
+## Contributing and security
+
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. Report
+suspected vulnerabilities privately according to [SECURITY.md](./SECURITY.md),
+not through a public issue.
+
+Basicrum-owned code is available under the
+[GNU General Public License version 2 or later](./LICENSE). The vendored
+Boomerang build retains its BSD license; see
+[THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
 
 ## References
 
