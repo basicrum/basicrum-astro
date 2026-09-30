@@ -75,6 +75,20 @@ export async function createSiteHarness(page, context, loader) {
     async measurementCookies() {
       return (await context.cookies()).filter((cookie) => MEASUREMENT_COOKIES.includes(cookie.name)).map((cookie) => cookie.name).sort();
     },
+    /** Boomerang cannot set its own cookies on 127.0.0.1, so seed them as a positive control. */
+    async seedMeasurementCookies() {
+      await page.evaluate(() => {
+        document.cookie = "RT=seeded; path=/; SameSite=Strict";
+        document.cookie = "BA=seeded; path=/; SameSite=Strict";
+      });
+    },
+    /** Run the emitted head bootstrap again, as a framework re-evaluating head scripts would. */
+    async replayBootstrap() {
+      const content = await page.evaluate(() => [...document.scripts]
+        .find((script) => !script.src && script.textContent.includes("basicRumBoomerangConfig"))?.textContent);
+      expect(content).toBeTruthy();
+      await page.addScriptTag({ content });
+    },
     bundleRequestCount: () => bundleRequests,
     pageErrors: () => [...pageErrors],
     unexpectedRequests: () => [...unexpectedRequests],

@@ -25,7 +25,12 @@ All findings are open. Update this list when a finding is resolved.
   from the 2026-09-28 review.
 - P2 optional delay suppresses short-visit unload measurements: open, carried
   over from the 2026-09-28 review.
-- P2 consent guarantees lacking effective regression tests: open.
+- P2 consent guarantees lacking effective regression tests: done 2026-09-30.
+  Cookie tests seed `RT` and `BA` first, withdrawal tests re-execute the
+  emitted bootstrap, and new cases cover early decisions, browser-side
+  `setConsent()` results, the absence of a stored flag, re-grant during the
+  download race, and unload traffic through a local collector with a
+  positive control.
 - P2 import-boundary tests miss ordinary violating imports: done 2026-09-30.
   `tests/unit/helpers/module-graph.js` parses JavaScript with acorn and scans
   declaration files with comments removed; both boundary tests resolve

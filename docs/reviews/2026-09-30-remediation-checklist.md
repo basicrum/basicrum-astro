@@ -10,7 +10,7 @@ is done, tick it here and update the status list in the review record (and in
 - [x] 3. P2 Boundary tests: parse module syntax instead of a line regex; cover
       multi-line, side-effect and dynamic imports, declaration files and nested
       directories; resolve relative paths before checking membership.
-- [ ] 4. P2 Consent tests: positive cookie controls before withdrawal, forced
+- [x] 4. P2 Consent tests: positive cookie controls before withdrawal, forced
       bootstrap replay after withdrawal, the missing lifecycle cases, and a local
       collector fixture that captures unload beacons.
 - [ ] 5. P2 Reject duplicate registrations during configuration with an

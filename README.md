@@ -193,7 +193,8 @@ Browser tests are two Playwright projects:
   stored decision on the next page. Start here to understand what the
   integration does.
 - `npm run test:integration` runs `tests/browser/`: SSR, dev server,
-  `ClientRouter` swaps, the delayed beacon, and download races.
+  `ClientRouter` swaps, the delayed beacon, download races, forced bootstrap
+  replay, and unload beacons captured by a local collector.
 
 The example is disabled until both `BASICRUM_SITE_ID` and `BASICRUM_BEACON_URL` are
 set in the process environment. Its consent buttons are demonstration controls,

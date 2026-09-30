@@ -10,14 +10,48 @@ import basicrum from "../src/index.js";
 const servers = [];
 const root = new URL("./fixtures/site/", import.meta.url);
 const collector = { siteId: "astro-test-site", beaconUrl: "https://collector.basicrum.test/beacon" };
+
+// A real HTTP collector on 127.0.0.1:43218 for tests that need unload traffic,
+// which page-level request interception does not reliably see. Variants marked
+// `local` beacon here with `<name>-site` as their site id.
+const LOCAL_COLLECTOR_PORT = 43218;
+const recorded = [];
+const localCollector = createServer(async (req, res) => {
+  const url = new URL(req.url, "http://localhost");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST");
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    res.writeHead(204).end();
+  } else if (url.pathname === "/beacons") {
+    const since = Number(url.searchParams.get("since") || 0);
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify(recorded.filter((beacon) => beacon.at >= since)));
+  } else if (url.pathname === "/beacon") {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    recorded.push({ at: Date.now(), method: req.method, params: Object.fromEntries(new URLSearchParams(body || url.search)) });
+    res.writeHead(204).end();
+  } else {
+    res.writeHead(404).end();
+  }
+});
+await new Promise((resolve, reject) => {
+  localCollector.once("error", reject);
+  localCollector.listen(LOCAL_COLLECTOR_PORT, "127.0.0.1", resolve);
+});
+servers.push(localCollector);
+
 const variants = [
   { name: "standard", port: 43211, loader: "standard" },
   { name: "consent", port: 43212, loader: "consent" },
   { name: "disabled", port: 43213, loader: "standard", enabled: false },
   { name: "delayed", port: 43214, loader: "consent", waitAfterOnloadMs: 150 },
+  { name: "local-standard", port: 43219, loader: "standard", local: true },
+  { name: "local-consent", port: 43220, loader: "consent", local: true },
 ];
 
-for (const { name, port, ...options } of variants) {
+for (const { name, port, local, ...options } of variants) {
   const outDir = new URL(`../.test-output/${name}/`, import.meta.url);
   await build({
     root,
@@ -26,7 +60,7 @@ for (const { name, port, ...options } of variants) {
     base: "/metrics/",
     logLevel: "silent",
     integrations: [basicrum({
-      ...collector,
+      ...(local ? { siteId: `${name}-site`, beaconUrl: `http://127.0.0.1:${LOCAL_COLLECTOR_PORT}/beacon` } : collector),
       ...options,
     })],
   });
