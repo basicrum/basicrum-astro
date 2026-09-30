@@ -37,6 +37,9 @@ script and serves the vendored Boomerang bundle from `/_basicrum/`.
   update pins through reviewed Dependabot pull requests.
 - Keep `version` in `package.json` and `package-lock.json` and the top
   `CHANGELOG.md` entry identical. Release tags use the `v<version>` form.
+- Never modify the vendored Boomerang build or the loaders. Behaviour that
+  the integration needs lives in the bootstrap's own plugins or in the
+  adapter; `vendor/` changes only by copying a newer WordPress release.
 - Upgrade the vendored Boomerang build and loaders together with
   `vendor/provenance.json`, `THIRD-PARTY-NOTICES.md` and `BOOMERANG_VERSION`
   in `src/core/assets.js`. The unit, browser and end-to-end tests assert the
