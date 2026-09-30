@@ -18,7 +18,7 @@ is done, tick it here and update the status list in the review record (and in
 - [x] 6. P2 Delayed first beacon: flush the pending beacon on early exit before
       the unload fields are added, clear the timer, keep the consent guard, assert
       the minimum delay, document the behaviour.
-- [ ] 7. P3 Convention scripts: full semver grammar, provenance `sourceCommit`
+- [x] 7. P3 Convention scripts: full semver grammar, provenance `sourceCommit`
       and notice digest cross-checks, fixed-string matching.
 - [ ] 8. P3 Core-split checklist: dependency wiring, adapter tests, convention
       scripts, declaration exports, and the endpoint's documented exception.

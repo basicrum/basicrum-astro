@@ -45,7 +45,11 @@ All findings are open. Update this list when a finding is resolved.
   non-literal dynamic imports, and a self-test covers the missed forms.
 - P2 release tags not checked against `main`: done 2026-09-30. The verify
   job fails unless the tagged commit is an ancestor of `origin/main`.
-- P3 convention checks can pass inconsistent metadata: open.
+- P3 convention checks can pass inconsistent metadata: done 2026-09-30. The
+  version check applies the full Semantic Versioning 2.0.0 grammar through
+  Node; the provenance check uses fixed-string matching, requires the
+  manifest's `sourceCommit` and bundle digest in the notices, rejects stale
+  digests in the notices, and rejects manifest entries without a file.
 - P3 core-split checklist omits necessary changes: open.
 
 ## Verdict
