@@ -17,7 +17,11 @@ below is the reviewer's final message, unedited.
 
 Updated as items are resolved. Dates are resolution dates.
 
-- P1 queued beacon can be sent after consent withdrawal: open.
+- P1 queued beacon can be sent after consent withdrawal: done 2026-09-30. A
+  `BasicrumConsent` plugin's `is_complete` returns false once the consent
+  loader has cleared the configuration, so `real_sendBeacon` drops queued
+  sends. A local-collector test queues a send, withdraws, and shows no
+  transmission, with a control proving the forced send otherwise arrives.
 - P1 delay fix still loses or mislabels early-exit measurements: open.
 - P2 declaration imports bypass both boundary tests: open.
 - P2 minimum-delay test measures observation time: open.

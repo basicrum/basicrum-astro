@@ -32,6 +32,15 @@ function configure(options, boomerangUrl, generator) {
     w.BOOMR.addVar("p_type", (meta && meta.content) || options.pageType);
   }]);
 
+  // Consent is also enforced at Boomerang's final send boundary: every send
+  // passes the plugins' is_complete checks first, so a send queued before a
+  // withdrawal is dropped once the consent loader has cleared the
+  // configuration. The standard loader never clears it.
+  w.BOOMR.plugins.BasicrumConsent = {
+    init: function () { return this; },
+    is_complete: function () { return Boolean(w.basicRumBoomerangConfig); },
+  };
+
   w.basicRumBoomerangConfig = {
     beacon_url: options.beaconUrl,
     instrument_xhr: false,

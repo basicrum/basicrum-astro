@@ -244,6 +244,46 @@ test.describe("unload traffic captured by a local collector", () => {
     expect(state.errors).toEqual([]);
   });
 
+  // Boomerang defers each send through requestIdleCallback. Capturing that
+  // scheduler once the delay timer is armed makes the race "queued before
+  // withdrawal, run afterwards" deterministic: when the timer fires, the first
+  // beacon is queued but not transmitted until the captured callback runs.
+  async function queueFirstBeaconAtExpiry(page, request, since) {
+    await page.goto(urls.localDelayed);
+    await page.getByRole("button", { name: "Grant", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.BOOMR.plugins.WaitAfterOnload.started)).toBe(true);
+    await page.evaluate(() => {
+      window.__deferred = [];
+      window.requestIdleCallback = (callback) => { window.__deferred.push(callback); return 1; };
+    });
+    await expect.poll(() => page.evaluate(() => window.BOOMR.plugins.WaitAfterOnload.complete), { timeout: 5000 }).toBe(true);
+    expect(await page.evaluate(() => window.__deferred.length)).toBeGreaterThan(0);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+  }
+  const runDeferred = (page) => page.evaluate(() => { while (window.__deferred.length) window.__deferred.shift()(); });
+
+  test("control: the send queued at delay expiry is transmitted when consent stands", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await queueFirstBeaconAtExpiry(page, request, since);
+    await runDeferred(page);
+    await expect.poll(() => collected(request, "local-delayed-site", since)).toHaveLength(1);
+    expect((await collected(request, "local-delayed-site", since))[0]).toMatchObject({ p_type: "home" });
+    expect(state.errors).toEqual([]);
+  });
+
+  test("a send queued before withdrawal is not transmitted afterwards", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await queueFirstBeaconAtExpiry(page, request, since);
+    await page.evaluate(() => window.OPT_OUT_BASICRUM_LOADER_WRAPPER());
+    expect(await page.evaluate(() => window.basicRumBoomerangConfig)).toBeNull();
+    await runDeferred(page);
+    await page.waitForTimeout(500);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+    expect(state.errors).toEqual([]);
+  });
+
   test("the first beacon waits for the configured delay", async ({ page, request }) => {
     const state = await observe(page);
     const since = Date.now();

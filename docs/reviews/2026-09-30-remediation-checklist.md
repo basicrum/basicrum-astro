@@ -29,7 +29,7 @@ is done, tick it here and update the status list in the review record (and in
 Source: `2026-09-30-codex-gpt-6-astra-followup.md`. Same rules: one commit per
 item, tick here and update that record's status list when done.
 
-- [ ] 9. P1 Enforce consent at Boomerang's final send boundary so a send queued
+- [x] 9. P1 Enforce consent at Boomerang's final send boundary so a send queued
       before withdrawal is never transmitted; prove it with a control.
 - [ ] 10. P1 Delayed beacon: deliver synchronously when the timer fires and
       track actual delivery, so an exit after expiry cannot mislabel the visit;

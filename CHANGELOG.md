@@ -9,6 +9,8 @@ entry must match `version` in `package.json`; `npm run conventions` checks it.
 
 ### Fixed
 
+- A beacon that Boomerang had queued just before consent was withdrawn is no
+  longer transmitted: consent is enforced at the final send boundary as well.
 - With `waitAfterOnloadMs`, leaving the page during the delay now sends the
   pending first beacon before the unload beacon instead of losing the visit.
   A withdrawal during the delay cancels the pending beacon and its timer.

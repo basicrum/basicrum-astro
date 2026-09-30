@@ -90,8 +90,8 @@ store a separate consent flag.
 
 - Before permission, the consent loader does not request Boomerang or send beacons.
 - Denial before the first grant still permits a later grant on the same page.
-- Withdrawal disables the initialized instance and removes the loader's `RT` and
-  `BA` cookies. A download already in progress can finish, but the bundle will not
+- Withdrawal disables the initialized instance, drops any beacon Boomerang had
+  already queued but not yet sent, and removes the loader's `RT` and `BA` cookies. A download already in progress can finish, but the bundle will not
   initialize from the cleared configuration.
 - After loading has started and permission is withdrawn, granting again requires
   a **full page reload**. An Astro client-side swap is not a reload. Store the new
