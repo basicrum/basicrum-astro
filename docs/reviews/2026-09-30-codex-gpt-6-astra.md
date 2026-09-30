@@ -17,7 +17,10 @@ below is the reviewer's final message, unedited.
 
 All findings are open. Update this list when a finding is resolved.
 
-- P1 publishing credential exposed to the whole release job: open.
+- P1 publishing credential exposed to the whole release job: done 2026-09-30.
+  The release workflow verifies and packs in a job without secrets and
+  publishes the uploaded tarball from a separate `release`-environment job
+  that alone reads `NPM_TOKEN`, in its publish step only.
 - P2 conflicting registrations choose a loader by order: open, carried over
   from the 2026-09-28 review.
 - P2 optional delay suppresses short-visit unload measurements: open, carried

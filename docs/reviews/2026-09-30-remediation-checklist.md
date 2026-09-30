@@ -4,7 +4,7 @@ Source: `2026-09-30-codex-gpt-6-astra.md`. One commit per item. When an item
 is done, tick it here and update the status list in the review record (and in
 `2026-09-28-fable-5.1.md` for the two carried-over findings).
 
-- [ ] 1. P1 Release workflow: verify and package without secrets; publish in a
+- [x] 1. P1 Release workflow: verify and package without secrets; publish in a
       separate job that alone receives the npm credential.
 - [ ] 2. P2 Release workflow: refuse tags whose commit is not on `main`.
 - [ ] 3. P2 Boundary tests: parse module syntax instead of a line regex; cover

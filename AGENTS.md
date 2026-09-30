@@ -80,5 +80,9 @@ all of them on every push to `main` and on every pull request.
    `main` and the tag.
 4. The Release workflow verifies the tag against the version, runs every check,
    attaches the npm tarball and its SHA-256 to a GitHub Release, and publishes
-   to npm only when the `NPM_TOKEN` repository secret exists. Do not create the
-   GitHub Release or publish manually.
+   to npm only when the `NPM_TOKEN` repository secret exists. Verification and
+   packaging run in a job without secrets; only the separate publish job, bound
+   to the `release` environment, receives the npm credential, and only in its
+   publish step. Add required reviewers or deployment branch rules to that
+   environment in the repository settings to gate publication. Do not create
+   the GitHub Release or publish manually.
