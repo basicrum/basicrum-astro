@@ -26,7 +26,11 @@ All findings are open. Update this list when a finding is resolved.
 - P2 optional delay suppresses short-visit unload measurements: open, carried
   over from the 2026-09-28 review.
 - P2 consent guarantees lacking effective regression tests: open.
-- P2 import-boundary tests miss ordinary violating imports: open.
+- P2 import-boundary tests miss ordinary violating imports: done 2026-09-30.
+  `tests/unit/helpers/module-graph.js` parses JavaScript with acorn and scans
+  declaration files with comments removed; both boundary tests resolve
+  relative specifiers, include nested files and declarations, reject
+  non-literal dynamic imports, and a self-test covers the missed forms.
 - P2 release tags not checked against `main`: done 2026-09-30. The verify
   job fails unless the tagged commit is an ancestor of `origin/main`.
 - P3 convention checks can pass inconsistent metadata: open.

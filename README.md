@@ -211,7 +211,8 @@ The source is split along the line where a future package boundary would go:
 | `src/boomerang-endpoint.js` | Vite `?raw` | Astro route serving the bundle. |
 
 Adapter files import the core only through `src/core/index.js` and
-`src/core/consent.js`; unit tests fail if either side crosses the boundary.
+`src/core/consent.js`. Unit tests parse every import, re-export and dynamic
+import in both directions and fail if either side crosses the boundary.
 `tests/unit/core.test.js` covers the core and `tests/unit/integration.test.js`
 covers the Astro adapter. Read [`src/core/README.md`](./src/core/README.md)
 for the checklist to extract the core into `@basicrum/boomerang-core`.

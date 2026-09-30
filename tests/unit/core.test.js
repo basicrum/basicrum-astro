@@ -2,7 +2,10 @@
 // the core when it becomes its own package; nothing here touches Astro.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Script } from "node:vm";
 import { test } from "node:test";
 import {
@@ -11,6 +14,7 @@ import {
   createBootstrap, createInstallation, loaderPath, normalizeOptions,
   readBoomerangBundle, readLoaderSource, serialize, setConsent,
 } from "../../src/core/index.js";
+import { codeWithoutComments, isInside, listSourceFiles, moduleSpecifiers, resolveSpecifier } from "./helpers/module-graph.js";
 
 const root = new URL("../../", import.meta.url);
 const options = { siteId: "test-site", beaconUrl: "https://collector.basicrum.test/beacon", loader: "consent" };
@@ -98,15 +102,70 @@ test("consent helper is safe during server rendering and rejects ambiguous value
   assert.throws(() => setConsent("false"), TypeError);
 });
 
-test("core never imports a framework or anything outside src/core and vendor", () => {
-  const coreDir = new URL("src/core/", root);
-  const strip = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-  for (const file of readdirSync(coreDir).filter((name) => name.endsWith(".js"))) {
-    const source = strip(readFileSync(new URL(file, coreDir), "utf8"));
-    for (const [, specifier] of source.matchAll(/^(?:import|export)\s[^\n]*?\bfrom\s*["']([^"']+)["']/gm)) {
-      assert.ok(specifier.startsWith("node:") || specifier.startsWith("./"), `${file} imports ${specifier}`);
+test("core never imports a framework or anything outside src/core", () => {
+  const coreDir = fileURLToPath(new URL("src/core/", root));
+  const files = listSourceFiles(coreDir);
+  assert.ok(files.length >= 7, "expected the core source and declaration files");
+  for (const file of files) {
+    const name = relative(coreDir, file);
+    for (const { specifier, kind } of moduleSpecifiers(file)) {
+      assert.notEqual(kind, "dynamic-unresolvable", `${name} has a dynamic import that cannot be checked`);
+      if (specifier.startsWith("node:")) continue;
+      assert.ok(specifier.startsWith("./") || specifier.startsWith("../"), `${name} imports the package "${specifier}"`);
+      const target = resolveSpecifier(file, specifier);
+      assert.ok(isInside(coreDir, target), `${name} imports "${specifier}", which resolves outside src/core`);
     }
-    if (file !== "assets.js") assert.equal(source.includes("vendor/"), false, `${file} reaches into vendor/ directly`);
-    assert.equal(/astro/i.test(source), false, `${file} mentions Astro`);
+    const code = codeWithoutComments(file);
+    if (name !== "assets.js") assert.equal(code.includes("vendor/"), false, `${name} reaches into vendor/ directly`);
+    assert.equal(/astro/i.test(code), false, `${name} mentions Astro`);
+  }
+  // The browser entry must stay importable from a page: no Node built-ins, no other modules.
+  assert.deepEqual(moduleSpecifiers(join(coreDir, "consent.js")), []);
+});
+
+test("the boundary scanner sees every import form", () => {
+  const dir = mkdtempSync(join(tmpdir(), "basicrum-module-graph-"));
+  try {
+    const file = join(dir, "sample.js");
+    writeFileSync(file, [
+      "import {",
+      "  readLoaderSource",
+      "} from \"./core/assets.js\";",
+      "import \"vite/client\";",
+      "export { normalizeOptions } from \"./core/options.js\";",
+      "export * from \"../vendor/anything.js\";",
+      "const adapter = import(\"../index.js\");",
+      "const dynamic = import(`./${adapter}.js`);",
+      "// import \"./commented-out.js\";",
+      "const text = 'from \"./inside-a-string.js\"';",
+      "export default adapter;",
+      "",
+    ].join("\n"));
+    assert.deepEqual(moduleSpecifiers(file), [
+      { specifier: "./core/assets.js", kind: "static" },
+      { specifier: "vite/client", kind: "side-effect" },
+      { specifier: "./core/options.js", kind: "re-export" },
+      { specifier: "../vendor/anything.js", kind: "re-export" },
+      { specifier: "../index.js", kind: "dynamic" },
+      { specifier: "<non-literal>", kind: "dynamic-unresolvable" },
+    ]);
+    const declaration = join(dir, "sample.d.ts");
+    writeFileSync(declaration, [
+      "/** from \"./in-a-comment.js\" */",
+      "import type { AstroIntegration } from \"astro\";",
+      "export type { Options } from",
+      "  \"./core/index.js\";",
+      "import \"./side-effect.js\";",
+      "",
+    ].join("\n"));
+    assert.deepEqual(moduleSpecifiers(declaration), [
+      { specifier: "astro", kind: "static" },
+      { specifier: "./core/index.js", kind: "static" },
+      { specifier: "./side-effect.js", kind: "side-effect" },
+    ]);
+    assert.equal(resolveSpecifier(join(dir, "src", "core", "a.js"), "./../index.js?raw"), join(dir, "src", "index.js"));
+    assert.equal(isInside(join(dir, "src", "core"), join(dir, "src", "core-extra", "x.js")), false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
