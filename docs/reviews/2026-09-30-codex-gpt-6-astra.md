@@ -13,9 +13,11 @@ the reviewer could not execute the browser suites; they passed locally and in
 CI for the same commit. No tracked file was changed by the review. The text
 below is the reviewer's final message, unedited.
 
-## Status as of 2026-09-30
+## Status list
 
-All findings are open. Update this list when a finding is resolved.
+Updated as items are resolved; the follow-up review
+`2026-09-30-codex-gpt-6-astra-followup.md` re-checked every item and
+qualifies several of the entries below.
 
 - P1 publishing credential exposed to the whole release job: done 2026-09-30.
   The release workflow verifies and packs in a job without secrets and
