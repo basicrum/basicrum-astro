@@ -68,7 +68,7 @@ npm run verify:package
 `npm test` runs the first five checks and the browser tests. `npm run
 verify:package` packs the package, installs the tarball into a temporary Astro
 consumer and builds it with a non-root base; it needs network access. CI runs
-all of them on every push and pull request.
+all of them on every push to `main` and on every pull request.
 
 ## Releases
 
