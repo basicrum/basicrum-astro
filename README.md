@@ -114,7 +114,7 @@ withdrawal behavior.
 | `debug` | `false` | Include the unminified loader. |
 | `pageType` | `"page"` | Fallback value of `p_type`. |
 | `stripQueryString` | `true` | Enable the bundled Boomerang URL query stripping. |
-| `waitAfterOnloadMs` | `0` | Delay the first beacon after load, or after initialization when consent arrives late. |
+| `waitAfterOnloadMs` | `0` | Delay the first beacon after load, or after initialization when consent arrives late. Leaving during the delay sends it at once. |
 | `resourceTiming` | `true` | Enable the ResourceTiming plugin. |
 | `continuity` | `true` | Enable the Continuity plugin. |
 
@@ -122,6 +122,12 @@ Unknown options and invalid types fail during configuration. Set `enabled: true`
 explicitly to test collection with `astro dev`; configure a test collector first.
 A production build also contains monitoring when served in a local preview unless
 you build with `enabled: false`.
+
+With a positive `waitAfterOnloadMs`, Boomerang holds every beacon back until the
+first one is sent. When the visitor leaves during the delay, the pending first
+beacon is sent on `pagehide` before the regular unload beacon, so short visits
+are still measured. A withdrawal during the delay cancels the pending beacon.
+Restoration from the back-forward cache is not covered by the tests.
 
 The generated configuration sets `p_gen: "astro"`, disables XHR instrumentation,
 and retains the WordPress defaults for secure, SameSite=Strict cookies. These are

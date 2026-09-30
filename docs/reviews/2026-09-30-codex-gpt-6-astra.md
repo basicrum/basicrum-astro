@@ -25,8 +25,13 @@ All findings are open. Update this list when a finding is resolved.
   `astro:config:setup` counts `@basicrum/astro` entries in the resolved
   integrations and throws when there is more than one; unit tests cover both
   mixed orders, repeated same-mode use, and a real Astro build.
-- P2 optional delay suppresses short-visit unload measurements: open, carried
-  over from the 2026-09-28 review.
+- P2 optional delay suppresses short-visit unload measurements: done
+  2026-09-30. The `WaitAfterOnload` plugin subscribes to `page_unload`, marks
+  itself complete, clears its timer and sends the pending first beacon
+  synchronously before RT adds its unload fields, guarded by the consent
+  configuration. Local-collector tests assert the minimum delay, the early
+  exit (first beacon then unload beacon), and withdrawal during the delay.
+  Back-forward cache restoration is not covered by tests.
 - P2 consent guarantees lacking effective regression tests: done 2026-09-30.
   Cookie tests seed `RT` and `BA` first, withdrawal tests re-execute the
   emitted bootstrap, and new cases cover early decisions, browser-side

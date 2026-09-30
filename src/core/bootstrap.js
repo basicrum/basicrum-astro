@@ -43,21 +43,46 @@ function configure(options, boomerangUrl, generator) {
   };
 
   if (options.waitAfterOnloadMs > 0) {
+    // While this plugin is incomplete Boomerang holds every beacon back, so a
+    // visitor leaving during the delay must not lose the measurement.
     w.BOOMR.plugins.WaitAfterOnload = {
       complete: false,
       started: false,
+      timer: null,
       init: function () {
         var plugin = this;
+        function finish() {
+          plugin.complete = true;
+          if (plugin.timer) {
+            clearTimeout(plugin.timer);
+            plugin.timer = null;
+          }
+        }
         function start() {
           if (plugin.started) return;
           plugin.started = true;
-          setTimeout(function () {
-            plugin.complete = true;
+          plugin.timer = setTimeout(function () {
+            if (plugin.complete) return;
+            finish();
             if (w.basicRumBoomerangConfig) w.BOOMR.sendBeacon();
           }, options.waitAfterOnloadMs);
         }
         if (document.readyState === "complete") start();
         else w.addEventListener("load", start, { once: true });
+        // This plugin is registered before the bundle's own plugins, so its
+        // unload handler runs before RT adds the unload fields. Send the
+        // pending first beacon now; the queued send would never run during
+        // unload, so send synchronously. A withdrawal cleared the
+        // configuration, in which case nothing is pending.
+        w.BOOMR.subscribe("page_unload", function () {
+          if (plugin.complete) return;
+          var pending = plugin.started && Boolean(w.basicRumBoomerangConfig);
+          finish();
+          if (pending) {
+            w.BOOMR.sendBeacon();
+            w.BOOMR.real_sendBeacon();
+          }
+        });
         return this;
       },
       is_complete: function () { return this.complete; },

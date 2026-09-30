@@ -49,6 +49,7 @@ const variants = [
   { name: "delayed", port: 43214, loader: "consent", waitAfterOnloadMs: 150 },
   { name: "local-standard", port: 43219, loader: "standard", local: true },
   { name: "local-consent", port: 43220, loader: "consent", local: true },
+  { name: "local-delayed", port: 43221, loader: "consent", local: true, waitAfterOnloadMs: 1500 },
 ];
 
 for (const { name, port, local, ...options } of variants) {

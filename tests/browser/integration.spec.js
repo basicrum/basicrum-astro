@@ -9,6 +9,7 @@ const urls = {
   dev: "http://127.0.0.1:43216/metrics/",
   localStandard: "http://127.0.0.1:43219/metrics/",
   localConsent: "http://127.0.0.1:43220/metrics/",
+  localDelayed: "http://127.0.0.1:43221/metrics/",
 };
 const localCollector = "http://127.0.0.1:43218";
 
@@ -239,6 +240,59 @@ test.describe("unload traffic captured by a local collector", () => {
     await expect(page.getByRole("heading", { name: "Next page" })).toBeVisible();
     await page.waitForTimeout(500);
     expect(await collected(request, "local-consent-site", since)).toHaveLength(1);
+    expect(state.bundleRequests()).toBe(1);
+    expect(state.errors).toEqual([]);
+  });
+
+  test("the first beacon waits for the configured delay", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await page.goto(urls.localDelayed);
+    await page.getByRole("button", { name: "Grant", exact: true }).click();
+    const granted = Date.now();
+    await page.waitForTimeout(700);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+    await expect.poll(() => collected(request, "local-delayed-site", since), { timeout: 5000 }).toHaveLength(1);
+    expect(Date.now() - granted).toBeGreaterThanOrEqual(1400);
+    const [beacon] = await collected(request, "local-delayed-site", since);
+    expect(beacon).toMatchObject({ p_type: "home" });
+    expect("rt.quit" in beacon).toBe(false);
+    expect(await page.evaluate(() => [window.BOOMR.plugins.WaitAfterOnload.complete, window.BOOMR.plugins.WaitAfterOnload.timer])).toEqual([true, null]);
+    expect(state.errors).toEqual([]);
+  });
+
+  test("leaving during the delay still sends the first beacon, then the unload beacon", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await page.goto(urls.localDelayed);
+    await page.getByRole("button", { name: "Grant", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.BOOMR.plugins.WaitAfterOnload.started)).toBe(true);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+    await page.getByRole("link", { name: "Next page" }).click();
+    await expect(page.getByRole("heading", { name: "Next page" })).toBeVisible();
+    await expect.poll(() => collected(request, "local-delayed-site", since)).toHaveLength(2);
+    const beacons = await collected(request, "local-delayed-site", since);
+    expect(beacons.filter((beacon) => !("rt.quit" in beacon))).toHaveLength(1);
+    expect(beacons.filter((beacon) => "rt.quit" in beacon)).toHaveLength(1);
+    expect(beacons[0]).toMatchObject({ p_type: "home", p_gen: "astro" });
+    await page.waitForTimeout(500);
+    expect(await collected(request, "local-delayed-site", since)).toHaveLength(2);
+    expect(state.errors).toEqual([]);
+  });
+
+  test("withdrawal during the delay cancels the pending beacon, also on exit", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await page.goto(urls.localDelayed);
+    await page.getByRole("button", { name: "Grant", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.BOOMR.plugins.WaitAfterOnload.started)).toBe(true);
+    await page.getByRole("button", { name: "Deny", exact: true }).click();
+    await page.waitForTimeout(1800);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+    await page.getByRole("link", { name: "Next page" }).click();
+    await expect(page.getByRole("heading", { name: "Next page" })).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
     expect(state.bundleRequests()).toBe(1);
     expect(state.errors).toEqual([]);
   });

@@ -15,7 +15,7 @@ is done, tick it here and update the status list in the review record (and in
       collector fixture that captures unload beacons.
 - [x] 5. P2 Reject duplicate registrations during configuration with an
       actionable error; cover both mixed orders and repeated same-mode use.
-- [ ] 6. P2 Delayed first beacon: flush the pending beacon on early exit before
+- [x] 6. P2 Delayed first beacon: flush the pending beacon on early exit before
       the unload fields are added, clear the timer, keep the consent guard, assert
       the minimum delay, document the behaviour.
 - [ ] 7. P3 Convention scripts: full semver grammar, provenance `sourceCommit`

@@ -22,7 +22,7 @@ script and serves the vendored Boomerang bundle from `/_basicrum/`.
 - Tests: `tests/unit/` (Node test runner), `tests/browser/` (Playwright
   integration: SSR, dev server, `ClientRouter`, races), `tests/e2e/` (readable
   per-loader workflows). `tests/serve-fixtures.js` builds the fixture site into
-  `.test-output/` and serves it on ports 43211 to 43220, with a local
+  `.test-output/` and serves it on ports 43211 to 43221, with a local
   collector on 43218 for tests that need unload traffic.
 - `docs/reviews/` holds dated review records. Each starts with a status list;
   update it when a finding is fixed.

@@ -74,6 +74,9 @@ test("installation combines base path, bundle URL, generator and the selected lo
       assert.equal(bootstrap.includes("OPT_IN_BASICRUM_LOADER_WRAPPER"), loader === "consent");
     }
   }
+  // The delay plugin and its unload flush travel inside the serialized configure().
+  const delayed = createInstallation(normalizeOptions({ ...options, waitAfterOnloadMs: 5 }), { generator: "astro" }).bootstrap;
+  for (const needle of ["WaitAfterOnload", '"page_unload"', "real_sendBeacon", "clearTimeout"]) assert.ok(delayed.includes(needle), needle);
   const { boomerangUrl } = createInstallation(normalizeOptions(options), { generator: "next" });
   assert.equal(boomerangUrl, boomerangAssetPath());
   assert.throws(() => createBootstrap({ settings: normalizeOptions(options), boomerangUrl, loaderSource: "" }), TypeError);

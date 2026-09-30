@@ -7,6 +7,12 @@ entry must match `version` in `package.json`; `npm run conventions` checks it.
 
 ## [Unreleased]
 
+### Fixed
+
+- With `waitAfterOnloadMs`, leaving the page during the delay now sends the
+  pending first beacon before the unload beacon instead of losing the visit.
+  A withdrawal during the delay cancels the pending beacon and its timer.
+
 ### Changed
 
 - Registering the integration more than once now fails configuration with an
