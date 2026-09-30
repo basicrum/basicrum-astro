@@ -56,12 +56,20 @@ export function moduleSpecifiers(file) {
   return found;
 }
 
+// Declaration files cannot be parsed by acorn, so their import forms are
+// matched textually after string-aware comment removal: `from "x"`,
+// `import "x"`, `import("x")` with or without import attributes,
+// `import x = require("x")`, and triple-slash references.
 function declarationSpecifiers(source) {
-  const code = stripComments(source);
   const found = [];
+  for (const match of source.matchAll(/^[ \t]*\/\/\/\s*<reference\s+(?:path|types)\s*=\s*["']([^"'\n]+)["']/gm)) {
+    found.push({ specifier: match[1], kind: "reference" });
+  }
+  const code = stripComments(source);
   for (const match of code.matchAll(/\bfrom\s*["']([^"'\n]+)["']/g)) found.push({ specifier: match[1], kind: "static" });
   for (const match of code.matchAll(/\bimport\s*["']([^"'\n]+)["']/g)) found.push({ specifier: match[1], kind: "side-effect" });
-  for (const match of code.matchAll(/\bimport\s*\(\s*["']([^"'\n]+)["']\s*\)/g)) found.push({ specifier: match[1], kind: "dynamic" });
+  for (const match of code.matchAll(/\bimport\s*\(\s*["']([^"'\n]+)["']\s*(?:,[^)]*)?\)/g)) found.push({ specifier: match[1], kind: "dynamic" });
+  for (const match of code.matchAll(/=\s*require\s*\(\s*["']([^"'\n]+)["']\s*\)/g)) found.push({ specifier: match[1], kind: "static" });
   return found;
 }
 
@@ -79,8 +87,32 @@ export function codeWithoutComments(file) {
   return code;
 }
 
+/** Remove comments without touching string literals, so a string containing
+ *  comment delimiters cannot hide the code that follows it. */
 function stripComments(source) {
-  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+  let out = "";
+  let quote = null;
+  for (let i = 0; i < source.length; i += 1) {
+    const ch = source[i];
+    const next = source[i + 1];
+    if (quote) {
+      out += ch;
+      if (ch === "\\") { out += next ?? ""; i += 1; } else if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'" || ch === "`") {
+      quote = ch;
+      out += ch;
+    } else if (ch === "/" && next === "/") {
+      while (i < source.length && source[i] !== "\n") i += 1;
+      out += "\n";
+    } else if (ch === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+      i = end === -1 ? source.length : end + 1;
+      out += " ";
+    } else {
+      out += ch;
+    }
+  }
+  return out;
 }
 
 /** Absolute path a relative specifier resolves to, ignoring a ?query suffix. */

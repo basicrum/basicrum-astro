@@ -33,7 +33,12 @@ Updated as items are resolved. Dates are resolution dates.
   completes only at page ready) and is documented as a limitation. The
   during-delay exit was re-verified against the pre-fix plugin: it lost the
   visit entirely (zero beacons), so that part of the fix is proven.
-- P2 declaration imports bypass both boundary tests: open.
+- P2 declaration imports bypass both boundary tests: done 2026-09-30. The
+  declaration scanner strips comments without touching string literals and
+  recognises `import()` with attributes, `import x = require()` and
+  triple-slash references; adapter discovery is recursive and excludes only
+  the core subtree; the self-test covers each form. Declaration files remain
+  a textual scan, as the README now states.
 - P2 minimum-delay test measures observation time: open.
 - P2 some consent claims still lack effective regression tests: open.
 - P3 status documentation overstates credential isolation and completion: open.

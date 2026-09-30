@@ -2,7 +2,7 @@
 // the core when it becomes its own package; nothing here touches Astro.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -154,18 +154,39 @@ test("the boundary scanner sees every import form", () => {
     ]);
     const declaration = join(dir, "sample.d.ts");
     writeFileSync(declaration, [
+      "/// <reference types=\"node\" />",
       "/** from \"./in-a-comment.js\" */",
       "import type { AstroIntegration } from \"astro\";",
       "export type { Options } from",
       "  \"./core/index.js\";",
       "import \"./side-effect.js\";",
+      "export type Review = typeof import(\"../client.js\", {",
+      "  with: { \"resolution-mode\": \"import\" }",
+      "}).setConsent;",
+      "import legacy = require(\"./legacy.js\");",
+      "declare const text: 'from \"./inside-a-string.js\"';",
+      "declare const opener: \"/* not a comment\";",
+      "import { Late } from \"./after-a-fake-comment-start.js\";",
+      "declare const closer: \"*/\";",
       "",
     ].join("\n"));
-    assert.deepEqual(moduleSpecifiers(declaration), [
+    const bySpecifier = (list) => [...list].sort((a, b) => a.specifier.localeCompare(b.specifier));
+    assert.deepEqual(bySpecifier(moduleSpecifiers(declaration)), bySpecifier([
+      { specifier: "node", kind: "reference" },
       { specifier: "astro", kind: "static" },
       { specifier: "./core/index.js", kind: "static" },
       { specifier: "./side-effect.js", kind: "side-effect" },
-    ]);
+      { specifier: "../client.js", kind: "dynamic" },
+      { specifier: "./legacy.js", kind: "static" },
+      { specifier: "./after-a-fake-comment-start.js", kind: "static" },
+    ]));
+    // Nested directories are listed, and a subtree can be excluded by path.
+    mkdirSync(join(dir, "src", "core", "deep"), { recursive: true });
+    mkdirSync(join(dir, "src", "nested"), { recursive: true });
+    for (const file of ["src/a.js", "src/core/b.js", "src/core/deep/c.d.ts", "src/nested/d.d.ts", "src/README.md"]) writeFileSync(join(dir, file), "");
+    const listed = listSourceFiles(join(dir, "src")).map((file) => relative(dir, file));
+    assert.deepEqual(listed, ["src/a.js", "src/core/b.js", "src/core/deep/c.d.ts", "src/nested/d.d.ts"]);
+    assert.deepEqual(listed.filter((file) => !isInside(join(dir, "src", "core"), join(dir, file))), ["src/a.js", "src/nested/d.d.ts"]);
     assert.equal(resolveSpecifier(join(dir, "src", "core", "a.js"), "./../index.js?raw"), join(dir, "src", "index.js"));
     assert.equal(isInside(join(dir, "src", "core"), join(dir, "src", "core-extra", "x.js")), false);
   } finally {

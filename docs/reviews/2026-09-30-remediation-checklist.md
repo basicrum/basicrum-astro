@@ -34,7 +34,7 @@ item, tick here and update that record's status list when done.
 - [x] 10. P1 Delayed beacon: deliver synchronously when the timer fires and
       track actual delivery, so an exit after expiry cannot mislabel the visit;
       document the exit-before-load bundle limitation.
-- [ ] 11. P2 Declaration scanner: import attributes, `import x = require()`,
+- [x] 11. P2 Declaration scanner: import attributes, `import x = require()`,
       string-aware comment stripping, nested adapter files; self-tests; honest
       README wording.
 - [ ] 12. P2 Minimum-delay assertion on collector receipt timestamps; drain

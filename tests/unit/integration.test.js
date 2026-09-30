@@ -7,7 +7,7 @@ import { Script } from "node:vm";
 import { test } from "node:test";
 import basicrum from "../../src/index.js";
 import { BOOMERANG_BUNDLE_PATH, readLoaderSource } from "../../src/core/index.js";
-import { listSourceFiles, moduleSpecifiers, resolveSpecifier } from "./helpers/module-graph.js";
+import { isInside, listSourceFiles, moduleSpecifiers, resolveSpecifier } from "./helpers/module-graph.js";
 
 const root = new URL("../../", import.meta.url);
 const options = { siteId: "test-site", beaconUrl: "https://collector.basicrum.test/beacon", loader: "consent" };
@@ -90,14 +90,15 @@ test("the endpoint serves the same bundle file the core catalogue names", () => 
 
 test("adapter files reach the core only through its public entry points", () => {
   const srcDir = fileURLToPath(new URL("src/", root));
-  const entryPoints = new Set([resolve(srcDir, "core/index.js"), resolve(srcDir, "core/consent.js")]);
-  const files = listSourceFiles(srcDir, { recursive: false });
+  const coreDir = resolve(srcDir, "core");
+  const entryPoints = new Set([resolve(coreDir, "index.js"), resolve(coreDir, "consent.js")]);
+  const files = listSourceFiles(srcDir).filter((file) => !isInside(coreDir, file));
   assert.ok(files.length >= 5, "expected the adapter source and declaration files");
   for (const file of files) {
     const name = relative(srcDir, file);
     for (const { specifier, kind } of moduleSpecifiers(file)) {
       assert.notEqual(kind, "dynamic-unresolvable", `${name} has a dynamic import that cannot be checked`);
-      if (specifier === "astro" || specifier.startsWith("node:")) continue;
+      if (specifier === "astro" || specifier.startsWith("astro/") || specifier.startsWith("node:")) continue;
       if (specifier === `../${BOOMERANG_BUNDLE_PATH}?raw`) {
         assert.equal(name, "boomerang-endpoint.js", `${name} imports the vendored bundle directly`);
         continue;
