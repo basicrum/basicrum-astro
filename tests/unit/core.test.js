@@ -99,6 +99,20 @@ test("vendored assets match their pinned provenance", () => {
   }
 });
 
+test("an early decision is not queued by the consent helper", () => {
+  globalThis.window = {};
+  try {
+    assert.equal(setConsent(true), false);
+    let calls = 0;
+    globalThis.window.OPT_IN_BASICRUM_LOADER_WRAPPER = () => { calls += 1; };
+    assert.equal(calls, 0, "defining the callback must not replay an earlier decision");
+    assert.equal(setConsent(true), true);
+    assert.equal(calls, 1);
+  } finally {
+    delete globalThis.window;
+  }
+});
+
 test("consent helper is safe during server rendering and rejects ambiguous values", () => {
   assert.equal(setConsent(true), false);
   assert.equal(setConsent(false), false);

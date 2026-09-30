@@ -43,7 +43,11 @@ Updated as items are resolved. Dates are resolution dates.
   assertion uses the collector's receipt timestamp, and the serial collector
   group closes each page and waits before the next test records its start
   time, so late unload traffic cannot cross over.
-- P2 some consent claims still lack effective regression tests: open.
+- P2 some consent claims still lack effective regression tests: done
+  2026-09-30. A unit test calls the real `setConsent()` before the callback
+  exists and shows that defining it later replays nothing. A browser test
+  visits the consent fixture as `site.basicrum.localhost`, seeds a host-only
+  and a parent-domain cookie, and shows withdrawal removes both.
 - P3 status documentation overstates credential isolation and completion: open.
 
 ## Verdict

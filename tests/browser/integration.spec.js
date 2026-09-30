@@ -58,7 +58,7 @@ async function observe(page) {
     if (url.hostname === "collector.basicrum.test") {
       beacons.push(Object.fromEntries(new URLSearchParams(request.postData() || url.search)));
       await route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" }, body: "" });
-    } else if (url.hostname === "127.0.0.1") await route.continue();
+    } else if (url.hostname === "127.0.0.1" || url.hostname.endsWith(".localhost")) await route.continue();
     else { unexpected.push(url.href); await route.abort(); }
   });
   return { beacons, errors, unexpected, bundleRequests: () => bundleRequests };
@@ -164,6 +164,30 @@ test("Astro swaps do not reload Boomerang or restore withdrawn configuration", a
   expect(await page.evaluate(() => typeof window.OPT_IN_BASICRUM_LOADER_WRAPPER)).toBe("function");
   expect(state.bundleRequests()).toBe(1);
   expect(state.errors).toEqual([]);
+});
+
+test("withdrawal removes host-only and parent-domain cookies on a real hostname", async ({ page, context }) => {
+  const state = await observe(page);
+  // Chromium resolves *.localhost to the loopback address, so the consent
+  // fixture can be visited under a name with a parent domain.
+  const site = "http://site.basicrum.localhost:43212/metrics/";
+  const cookies = async () => (await context.cookies(site))
+    .filter((cookie) => ["RT", "BA"].includes(cookie.name))
+    .map((cookie) => `${cookie.name}@${cookie.domain}`).sort();
+  await page.goto(site);
+  await page.evaluate(() => {
+    document.cookie = "RT=seeded; path=/; SameSite=Strict";
+    document.cookie = "BA=seeded; path=/; domain=basicrum.localhost; SameSite=Strict";
+  });
+  expect(await cookies()).toEqual(["BA@.basicrum.localhost", "RT@site.basicrum.localhost"]);
+  await page.getByRole("button", { name: "Grant", exact: true }).click();
+  await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
+  expect(await cookies()).toContain("BA@.basicrum.localhost");
+  await page.getByRole("button", { name: "Deny", exact: true }).click();
+  expect(await cookies()).toEqual([]);
+  expect(await page.evaluate(() => window.basicRumBoomerangConfig)).toBeNull();
+  expect(state.errors).toEqual([]);
+  expect(state.unexpected).toEqual([]);
 });
 
 test("a decision made before the loader runs is not queued", async ({ page }) => {
