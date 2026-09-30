@@ -7,6 +7,11 @@ entry must match `version` in `package.json`; `npm run conventions` checks it.
 
 ## [Unreleased]
 
+### Changed
+
+- Registering the integration more than once now fails configuration with an
+  actionable error instead of silently keeping the first registration.
+
 ## [0.1.0] - 2026-09-30
 
 Initial version. Not yet published to npm.

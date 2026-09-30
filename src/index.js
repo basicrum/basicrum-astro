@@ -14,6 +14,17 @@ export default function basicrum(options) {
     name: "@basicrum/astro",
     hooks: {
       "astro:config:setup": ({ config, command, injectScript, injectRoute }) => {
+        // A shared preset and the site config can both add this integration.
+        // Two registrations would let registration order pick the loader, so
+        // refuse the configuration instead of guessing.
+        const registrations = (config.integrations ?? [])
+          .filter((integration) => integration && integration.name === "@basicrum/astro").length;
+        if (registrations > 1) {
+          throw new Error(
+            `[basicrum] @basicrum/astro is registered ${registrations} times. Keep exactly one basicrum() entry ` +
+            "in astro.config; check shared presets and the site configuration.",
+          );
+        }
         if (!(settings.enabled ?? command === "build")) return;
 
         // Injected route patterns are relative to Astro's base; browser URLs are not.

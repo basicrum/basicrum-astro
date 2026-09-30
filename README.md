@@ -37,8 +37,9 @@ export default defineConfig({
 
 Use your actual collector URL and public site identifier. Both become visible in
 the rendered page. Remove the previous Basicrum/Boomerang bootstrap when adopting
-this integration. Include this integration only once; no layout component is
-required.
+this integration. Include this integration only once: a second registration,
+for example from a shared preset, fails configuration with an error instead
+of letting registration order pick the loader. No layout component is required.
 
 ## Two loader modes
 

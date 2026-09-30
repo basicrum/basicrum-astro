@@ -46,6 +46,8 @@ script and serves the vendored Boomerang bundle from `/_basicrum/`.
   `scriptUrl` override: the loaders and the `basicRumBoomerangConfig` contract
   ship together.
 - `enabled` defaults to true for builds and false for `astro dev`.
+- A second `basicrum()` registration fails `astro:config:setup`; there is no
+  order-dependent winner.
 - The bootstrap is serialized from `configure()` in `src/core/bootstrap.js`
   and runs as a classic script: keep it free of module syntax, keep the
   generator name (`p_gen`) a parameter, and never restore configuration that a

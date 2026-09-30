@@ -21,8 +21,10 @@ All findings are open. Update this list when a finding is resolved.
   The release workflow verifies and packs in a job without secrets and
   publishes the uploaded tarball from a separate `release`-environment job
   that alone reads `NPM_TOKEN`, in its publish step only.
-- P2 conflicting registrations choose a loader by order: open, carried over
-  from the 2026-09-28 review.
+- P2 conflicting registrations choose a loader by order: done 2026-09-30.
+  `astro:config:setup` counts `@basicrum/astro` entries in the resolved
+  integrations and throws when there is more than one; unit tests cover both
+  mixed orders, repeated same-mode use, and a real Astro build.
 - P2 optional delay suppresses short-visit unload measurements: open, carried
   over from the 2026-09-28 review.
 - P2 consent guarantees lacking effective regression tests: done 2026-09-30.
