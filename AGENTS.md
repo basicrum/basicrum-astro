@@ -78,7 +78,8 @@ all of them on every push to `main` and on every pull request.
    `package-lock.json`, then `npm run conventions`.
 3. Commit, tag with `git tag -a vX.Y.Z -m "Basicrum Astro vX.Y.Z"`, and push
    `main` and the tag.
-4. The Release workflow verifies the tag against the version, runs every check,
+4. The Release workflow refuses a tag whose commit is not on `main`, verifies
+   the tag against the version, runs every check,
    attaches the npm tarball and its SHA-256 to a GitHub Release, and publishes
    to npm only when the `NPM_TOKEN` repository secret exists. Verification and
    packaging run in a job without secrets; only the separate publish job, bound

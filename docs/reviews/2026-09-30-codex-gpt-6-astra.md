@@ -27,7 +27,8 @@ All findings are open. Update this list when a finding is resolved.
   over from the 2026-09-28 review.
 - P2 consent guarantees lacking effective regression tests: open.
 - P2 import-boundary tests miss ordinary violating imports: open.
-- P2 release tags not checked against `main`: open.
+- P2 release tags not checked against `main`: done 2026-09-30. The verify
+  job fails unless the tagged commit is an ancestor of `origin/main`.
 - P3 convention checks can pass inconsistent metadata: open.
 - P3 core-split checklist omits necessary changes: open.
 

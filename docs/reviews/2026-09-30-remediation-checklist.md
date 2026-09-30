@@ -6,7 +6,7 @@ is done, tick it here and update the status list in the review record (and in
 
 - [x] 1. P1 Release workflow: verify and package without secrets; publish in a
       separate job that alone receives the npm credential.
-- [ ] 2. P2 Release workflow: refuse tags whose commit is not on `main`.
+- [x] 2. P2 Release workflow: refuse tags whose commit is not on `main`.
 - [ ] 3. P2 Boundary tests: parse module syntax instead of a line regex; cover
       multi-line, side-effect and dynamic imports, declaration files and nested
       directories; resolve relative paths before checking membership.
