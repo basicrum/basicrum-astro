@@ -50,7 +50,11 @@ All findings are open. Update this list when a finding is resolved.
   Node; the provenance check uses fixed-string matching, requires the
   manifest's `sourceCommit` and bundle digest in the notices, rejects stale
   digests in the notices, and rejects manifest entries without a file.
-- P3 core-split checklist omits necessary changes: open.
+- P3 core-split checklist omits necessary changes: done 2026-09-30.
+  `src/core/README.md` now covers the dependency wiring, exports and
+  declarations, the moved and copied tests and scripts, the adapter test
+  updates, `verify-package.mjs`, `files`, the documentation, and documents the
+  endpoint's `?raw` exception with its synchronization test.
 
 ## Verdict
 

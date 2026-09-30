@@ -1,6 +1,7 @@
 # Remediation checklist for the 2026-09-30 review
 
-Source: `2026-09-30-codex-gpt-6-astra.md`. One commit per item. When an item
+Source: `2026-09-30-codex-gpt-6-astra.md`. One commit per item. All eight
+items were completed on 2026-09-30. When an item
 is done, tick it here and update the status list in the review record (and in
 `2026-09-28-fable-5.1.md` for the two carried-over findings).
 
@@ -20,5 +21,5 @@ is done, tick it here and update the status list in the review record (and in
       the minimum delay, document the behaviour.
 - [x] 7. P3 Convention scripts: full semver grammar, provenance `sourceCommit`
       and notice digest cross-checks, fixed-string matching.
-- [ ] 8. P3 Core-split checklist: dependency wiring, adapter tests, convention
+- [x] 8. P3 Core-split checklist: dependency wiring, adapter tests, convention
       scripts, declaration exports, and the endpoint's documented exception.

@@ -2,9 +2,11 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 /**
- * Vendored asset catalogue. This module is the only place that knows the
- * Boomerang version, the loader filenames and where they live on disk.
- * Adapters must never reach into vendor/ directly.
+ * Vendored asset catalogue. This module is the only place in the core that
+ * knows the Boomerang version, the loader filenames and where they live on
+ * disk. Adapters must never reach into vendor/ directly. The one exception is
+ * the Astro endpoint's static ?raw import of the bundle, which a unit test
+ * keeps in sync with BOOMERANG_BUNDLE_PATH.
  */
 export const BOOMERANG_VERSION = "1.815.60";
 

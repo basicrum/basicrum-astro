@@ -10,9 +10,10 @@ script and serves the vendored Boomerang bundle from `/_basicrum/`.
   injects the prerendered asset route (`src/boomerang-endpoint.js`) and the head
   script. `src/client.js` is the browser entry re-exporting `setConsent()`.
 - `src/core/` is framework-neutral: `options.js` validates options,
-  `bootstrap.js` generates the head script, `assets.js` is the only module that
-  knows the Boomerang version and vendored file names, `consent.js` applies a
-  consent decision. Adapters import only `src/core/index.js` and
+  `bootstrap.js` generates the head script, `assets.js` is the only core module
+  that knows the Boomerang version and vendored file names (the Astro endpoint
+  repeats the bundle name in its static `?raw` import, which a unit test keeps
+  in sync), `consent.js` applies a consent decision. Adapters import only `src/core/index.js` and
   `src/core/consent.js`. Unit tests enforce the boundary in both directions;
   `src/core/README.md` holds the checklist for extracting the core into its own
   package.
