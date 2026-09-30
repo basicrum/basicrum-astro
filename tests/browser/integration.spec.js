@@ -36,8 +36,13 @@ async function replayBootstrap(page) {
 
 /** Beacons the local collector received for a site id since a timestamp. */
 async function collected(request, siteId, since) {
+  return (await receipts(request, siteId, since)).map((beacon) => beacon.params);
+}
+
+/** The same beacons with the collector's receipt time, for timing assertions. */
+async function receipts(request, siteId, since) {
   const response = await request.get(`${localCollector}/beacons?since=${since}`);
-  return (await response.json()).map((beacon) => beacon.params).filter((params) => params.brum_site_id === siteId);
+  return (await response.json()).filter((beacon) => beacon.params.brum_site_id === siteId);
 }
 
 async function observe(page) {
@@ -216,6 +221,13 @@ test("no separate consent flag is stored by the integration", async ({ page, con
 test.describe("unload traffic captured by a local collector", () => {
   test.describe.configure({ mode: "serial" });
 
+  // Closing a page sends its unload beacon; give it time to land before the
+  // next test records its start time, so late traffic cannot cross over.
+  test.afterEach(async ({ page }) => {
+    await page.close();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  });
+
   test("a normal exit sends the unload beacon (positive control)", async ({ page, request }) => {
     const state = await observe(page);
     const since = Date.now();
@@ -306,8 +318,10 @@ test.describe("unload traffic captured by a local collector", () => {
     await page.waitForTimeout(700);
     expect(await collected(request, "local-delayed-site", since)).toEqual([]);
     await expect.poll(() => collected(request, "local-delayed-site", since), { timeout: 5000 }).toHaveLength(1);
-    expect(Date.now() - granted).toBeGreaterThanOrEqual(1400);
-    const [beacon] = await collected(request, "local-delayed-site", since);
+    // The timer is armed after the grant click returns, so the collector's
+    // receipt time must be at least the configured delay after it.
+    const [{ at, params: beacon }] = await receipts(request, "local-delayed-site", since);
+    expect(at - granted).toBeGreaterThanOrEqual(1400);
     expect(beacon).toMatchObject({ p_type: "home" });
     expect("rt.quit" in beacon).toBe(false);
     expect(await page.evaluate(() => [window.BOOMR.plugins.WaitAfterOnload.complete, window.BOOMR.plugins.WaitAfterOnload.timer])).toEqual([true, null]);

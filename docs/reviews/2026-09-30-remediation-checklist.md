@@ -37,7 +37,7 @@ item, tick here and update that record's status list when done.
 - [x] 11. P2 Declaration scanner: import attributes, `import x = require()`,
       string-aware comment stripping, nested adapter files; self-tests; honest
       README wording.
-- [ ] 12. P2 Minimum-delay assertion on collector receipt timestamps; drain
+- [x] 12. P2 Minimum-delay assertion on collector receipt timestamps; drain
       late traffic between local-collector tests.
 - [ ] 13. P2 Early-decision test that calls the real helper before the loader;
       hostname fixture with host-only and parent-domain cookie controls.

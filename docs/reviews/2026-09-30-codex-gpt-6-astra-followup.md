@@ -39,7 +39,10 @@ Updated as items are resolved. Dates are resolution dates.
   triple-slash references; adapter discovery is recursive and excludes only
   the core subtree; the self-test covers each form. Declaration files remain
   a textual scan, as the README now states.
-- P2 minimum-delay test measures observation time: open.
+- P2 minimum-delay test measures observation time: done 2026-09-30. The
+  assertion uses the collector's receipt timestamp, and the serial collector
+  group closes each page and waits before the next test records its start
+  time, so late unload traffic cannot cross over.
 - P2 some consent claims still lack effective regression tests: open.
 - P3 status documentation overstates credential isolation and completion: open.
 
