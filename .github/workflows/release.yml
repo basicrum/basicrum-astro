@@ -129,7 +129,7 @@ jobs:
           if npm view "@basicrum/astro@${version}" version >/dev/null 2>&1; then
             echo "@basicrum/astro@${version} is already on the registry; skipping publish."
           else
-            npm publish release/*.tgz --provenance --access public
+            npm publish ./release/*.tgz --provenance --access public
           fi
 
       - name: Create GitHub release and upload assets
