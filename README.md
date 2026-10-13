@@ -14,14 +14,14 @@ This package targets Astro 7 and Node.js 22.12 or later.
 From your Astro site's directory:
 
 ```sh
-npm install @basicrum/astro
+npm install @basicrum/basicrum-astro
 ```
 
 Add the integration to `astro.config.mjs`:
 
 ```js
 import { defineConfig } from "astro/config";
-import basicrum from "@basicrum/astro";
+import basicrum from "@basicrum/basicrum-astro";
 
 export default defineConfig({
   integrations: [
@@ -39,6 +39,22 @@ the rendered page. Remove the previous Basicrum/Boomerang bootstrap when adoptin
 this integration. Include this integration only once: a second registration,
 for example from a shared preset, fails configuration with an error instead
 of letting registration order pick the loader. No layout component is required.
+
+### Migrating from the former package name
+
+Starting with version 0.1.2, the package is named `@basicrum/basicrum-astro`.
+If your site uses `@basicrum/astro`, replace the dependency:
+
+```sh
+npm uninstall @basicrum/astro
+npm install @basicrum/basicrum-astro
+```
+
+Update imports in your Astro configuration and consent code to
+`@basicrum/basicrum-astro` and `@basicrum/basicrum-astro/client` respectively.
+Keep the same options and one `basicrum()` registration. Registering both
+package names fails configuration, including when a shared preset uses the old
+name. The loader behavior and MIT license are unchanged.
 
 ## Two loader modes
 
@@ -61,7 +77,7 @@ Select `loader: "consent"`, then connect your consent manager's resolved analyti
 decision to the helper:
 
 ```js
-import { setConsent } from "@basicrum/astro/client";
+import { setConsent } from "@basicrum/basicrum-astro/client";
 
 // In your consent manager's initial-state and change callbacks:
 setConsent(true);  // Permission granted.
@@ -81,7 +97,7 @@ Run callbacks after the head loader has executed. A normal Astro module script
 runs after that loader. `setConsent()` returns `false` on the server, when the
 integration is disabled, or when the non-consent loader is selected. It does not
 queue an early decision. The global callback types are included when importing
-`@basicrum/astro/client`.
+`@basicrum/basicrum-astro/client`.
 
 The external consent manager owns persistence and must apply the saved decision
 on every full page load. This integration does not provide a consent banner or

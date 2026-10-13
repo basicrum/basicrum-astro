@@ -1,6 +1,6 @@
 {
-  "name": "@basicrum/astro",
-  "version": "0.1.1",
+  "name": "@basicrum/basicrum-astro",
+  "version": "0.1.2",
   "description": "Basicrum real user monitoring for Astro with non-consent and consent-controlled loaders.",
   "homepage": "https://github.com/basicrum/basicrum-astro#readme",
   "bugs": {

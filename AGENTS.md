@@ -1,6 +1,6 @@
 # Basicrum Astro Integration
 
-`@basicrum/astro` is an Astro 7 integration for Basicrum real user monitoring.
+`@basicrum/basicrum-astro` is an Astro 7 integration for Basicrum real user monitoring.
 It injects one of the two Basicrum Boomerang loaders as an inline classic head
 script and serves the vendored Boomerang bundle from `/_basicrum/`.
 
@@ -60,7 +60,8 @@ script and serves the vendored Boomerang bundle from `/_basicrum/`.
   ship together.
 - `enabled` defaults to true for builds and false for `astro dev`.
 - A second `basicrum()` registration fails `astro:config:setup`; there is no
-  order-dependent winner.
+  order-dependent winner. The former `@basicrum/astro` integration name also
+  counts, so mixing old and new packages fails configuration.
 - The bootstrap is serialized from `configure()` in `src/core/bootstrap.ts`
   and runs as a classic script: keep it free of module syntax, keep the
   generator name (`p_gen`) a parameter, and never restore configuration that a
@@ -109,3 +110,5 @@ a non-root base; it needs network access. CI runs all of them on every push to
    publish step. Add required reviewers or deployment branch rules to that
    environment in the repository settings to gate publication. Do not create
    the GitHub Release or publish manually.
+   The 0.1.2 publish step also deprecates the former `@basicrum/astro` versions
+   through 0.1.1 after the renamed package is published.

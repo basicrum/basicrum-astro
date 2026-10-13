@@ -12,17 +12,20 @@ import { createInstallation, normalizeOptions } from "./core/index.js";
 export default function basicrum(options: BasicrumOptions): AstroIntegration {
   const settings = normalizeOptions(options);
   return {
-    name: "@basicrum/astro",
+    name: "@basicrum/basicrum-astro",
     hooks: {
       "astro:config:setup": ({ config, command, injectScript, injectRoute }) => {
         // A shared preset and the site config can both add this integration.
         // Two registrations would let registration order pick the loader, so
-        // refuse the configuration instead of guessing.
+        // refuse the configuration instead of guessing. Count the former
+        // package name too, so a partial migration cannot install two loaders.
         const registrations = (config.integrations ?? [])
-          .filter((integration) => integration && integration.name === "@basicrum/astro").length;
+          .filter((integration) => integration && (
+            integration.name === "@basicrum/basicrum-astro" || integration.name === "@basicrum/astro"
+          )).length;
         if (registrations > 1) {
           throw new Error(
-            `[basicrum] @basicrum/astro is registered ${registrations} times. Keep exactly one basicrum() entry ` +
+            `[basicrum] @basicrum/basicrum-astro is registered ${registrations} times. Keep exactly one basicrum() entry ` +
             "in astro.config; check shared presets and the site configuration.",
           );
         }

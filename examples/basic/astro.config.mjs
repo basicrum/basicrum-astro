@@ -1,5 +1,5 @@
 import { defineConfig } from "astro/config";
-import basicrum from "@basicrum/astro";
+import basicrum from "@basicrum/basicrum-astro";
 
 export default defineConfig({
   integrations: [basicrum({

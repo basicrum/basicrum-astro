@@ -16,7 +16,7 @@
     <button id="withdraw">Withdraw permission</button>
     <p id="status" role="status"></p>
     <script>
-      import { setConsent } from "@basicrum/astro/client";
+      import { setConsent } from "@basicrum/basicrum-astro/client";
       const status = document.querySelector("#status")!;
       document.querySelector("#grant")!.addEventListener("click", () => {
         status.textContent = setConsent(true)

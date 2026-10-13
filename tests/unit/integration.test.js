@@ -45,6 +45,23 @@ test("a second registration fails configuration in every order", () => {
   assert.equal(setup({}, "build", "/", [{ name: "@astrojs/sitemap", hooks: {} }]).scripts.length, 1);
 });
 
+test("mixing the former and current package names fails in either order", () => {
+  const legacy = { name: "@basicrum/astro", hooks: {} };
+  for (const loader of ["non-consent", "consent"]) {
+    const integration = basicrum({ ...options, loader });
+    assert.equal(integration.name, "@basicrum/basicrum-astro");
+    for (const integrations of [[legacy, integration], [integration, legacy]]) {
+      for (const command of ["build", "dev"]) {
+        assert.throws(() => integration.hooks["astro:config:setup"]({
+          config: { base: "/", integrations }, command,
+          injectScript() { assert.fail("must reject before injecting a loader"); },
+          injectRoute() { assert.fail("must reject before injecting a route"); },
+        }), /@basicrum\/basicrum-astro is registered 2 times/);
+      }
+    }
+  }
+});
+
 test("Astro refuses to build a site that registers the integration twice", async () => {
   const root = new URL("../fixtures/site/", import.meta.url);
   const outDir = new URL("../../.test-output/duplicate/", import.meta.url);

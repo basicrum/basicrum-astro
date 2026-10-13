@@ -1,5 +1,5 @@
-import basicrum, { type BasicrumOptions } from "@basicrum/astro";
-import { setConsent } from "@basicrum/astro/client";
+import basicrum, { type BasicrumOptions } from "@basicrum/basicrum-astro";
+import { setConsent } from "@basicrum/basicrum-astro/client";
 import type { AstroIntegration } from "astro";
 
 const options: BasicrumOptions = {

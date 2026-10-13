@@ -2,6 +2,11 @@
 
 Date: 2026-09-30
 
+Package-name update, 2026-10-13: version 0.1.2 uses
+`@basicrum/basicrum-astro`. References to `@basicrum/astro` below describe the
+package as reviewed; the current duplicate-registration check recognizes both
+names.
+
 Reviewer: OpenAI Codex CLI 0.155.1, model `gpt-6-astra`, reasoning effort
 xhigh, session `01a0f2de-c8a7-7332-95d5-ca513e4981ff`. Invoked non-interactively
 by Claude Fable 5.1 (`claude-fable-5-1`) with `codex exec -s workspace-write`

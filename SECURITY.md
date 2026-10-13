@@ -2,9 +2,10 @@
 
 ## Supported versions
 
-Before the first npm release, security fixes are made on the `main` branch.
-After publication, only the latest released version of `@basicrum/astro`
+Only the latest released version of `@basicrum/basicrum-astro`
 receives security fixes unless a release notice states otherwise.
+Users of the former `@basicrum/astro` package should follow the
+[migration instructions](README.md#migrating-from-the-former-package-name).
 
 ## Reporting a vulnerability
 

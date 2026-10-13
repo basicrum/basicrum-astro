@@ -40,7 +40,7 @@ try {
   writeFileSync(join(consumer, "package.json"), JSON.stringify({ name: "basicrum-astro-consumer", private: true, type: "module" }, null, 2));
   writeFileSync(join(consumer, "astro.config.mjs"), [
     'import { defineConfig } from "astro/config";',
-    'import basicrum from "@basicrum/astro";',
+    'import basicrum from "@basicrum/basicrum-astro";',
     "",
     "export default defineConfig({",
     '  base: "/metrics/",',
@@ -60,7 +60,7 @@ try {
     '  <head><meta charset="utf-8" /><meta name="basicrum:page-type" content="home" /><title>Packed consumer</title></head>',
     "  <body>",
     "    <h1>Packed consumer</h1>",
-    '    <script>import { setConsent } from "@basicrum/astro/client"; setConsent(false);</script>',
+    '    <script>import { setConsent } from "@basicrum/basicrum-astro/client"; setConsent(false);</script>',
     "  </body>",
     "</html>",
     "",
@@ -68,8 +68,9 @@ try {
 
   console.log(`verify-package: installing astro@${astroVersion} and the tarball into a temporary consumer`);
   run("npm", ["install", "--no-audit", "--no-fund", "--loglevel=error", `astro@${astroVersion}`, tarball], consumer);
-  const installed = join(consumer, "node_modules", "@basicrum", "astro");
+  const installed = join(consumer, "node_modules", "@basicrum", "basicrum-astro");
   const installedPackage = JSON.parse(readFileSync(join(installed, "package.json"), "utf8"));
+  check(installedPackage.name === "@basicrum/basicrum-astro", "published package has the wrong name");
   check(installedPackage.license === "MIT", "published package does not declare the MIT license");
   for (const notice of ["LICENSE", "THIRD-PARTY-NOTICES.md", "vendor/boomerang/LICENSE.txt"]) {
     const installedNotice = join(installed, notice);

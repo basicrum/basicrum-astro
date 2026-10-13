@@ -116,7 +116,8 @@ jobs:
       # The only step that receives the npm credential. It publishes before
       # the GitHub release is created, so a publish failure leaves no
       # half-release, and it skips a version already on the registry so a
-      # re-run is safe. Without NPM_TOKEN it does nothing.
+      # re-run is safe. Version 0.1.2 then adds the old name's migration notice.
+      # Without NPM_TOKEN it does nothing.
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -126,10 +127,13 @@ jobs:
             exit 0
           fi
           version="${GITHUB_REF_NAME#v}"
-          if npm view "@basicrum/astro@${version}" version >/dev/null 2>&1; then
-            echo "@basicrum/astro@${version} is already on the registry; skipping publish."
+          if npm view "@basicrum/basicrum-astro@${version}" version >/dev/null 2>&1; then
+            echo "@basicrum/basicrum-astro@${version} is already on the registry; skipping publish."
           else
             npm publish ./release/*.tgz --provenance --access public
+          fi
+          if [ "$version" = "0.1.2" ]; then
+            npm deprecate '@basicrum/astro@<=0.1.1' 'Renamed to @basicrum/basicrum-astro. Replace the dependency and update imports, including /client. See https://github.com/basicrum/basicrum-astro#readme'
           fi
 
       - name: Create GitHub release and upload assets

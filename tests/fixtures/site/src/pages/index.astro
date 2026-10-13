@@ -14,7 +14,7 @@
     <button id="grant">Grant</button>
     <button id="deny">Deny</button>
     <script>
-      import { setConsent } from "@basicrum/astro/client";
+      import { setConsent } from "@basicrum/basicrum-astro/client";
       (window as any).basicrumSetConsent = setConsent;
       document.querySelector("#grant")!.addEventListener("click", () => setConsent(true));
       document.querySelector("#deny")!.addEventListener("click", () => setConsent(false));

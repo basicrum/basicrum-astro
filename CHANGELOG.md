@@ -7,6 +7,23 @@ entry must match `version` in `package.json`; `npm run conventions` checks it.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-13
+
+### Changed
+
+- Rename the npm package from `@basicrum/astro` to `@basicrum/basicrum-astro`.
+  Replace the dependency and update imports, including the `/client` entry.
+  Options, loader behavior and the MIT license are unchanged.
+- Update the examples, type tests, packed-package checks, documentation and
+  release workflow to use the new name. After publishing 0.1.2, the release
+  workflow adds a migration notice to the former package's versions through
+  0.1.1 on npm.
+
+### Fixed
+
+- Reject configurations that register both old and new package names, in
+  either order, so shared presets cannot introduce a second loader.
+
 ## [0.1.1] - 2026-10-13
 
 ### Changed
@@ -67,6 +84,7 @@ Initial release.
 - Registering the integration more than once now fails configuration with an
   actionable error instead of silently keeping the first registration.
 
-[Unreleased]: https://github.com/basicrum/basicrum-astro/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/basicrum/basicrum-astro/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/basicrum/basicrum-astro/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/basicrum/basicrum-astro/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/basicrum/basicrum-astro/releases/tag/v0.1.0

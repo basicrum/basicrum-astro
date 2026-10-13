@@ -19,7 +19,7 @@ assignees: ''
 
 ## Environment
 
-- `@basicrum/astro` version:
+- `@basicrum/basicrum-astro` version:
 - Astro version and output mode (static, server, adapter):
 - Node.js version:
 - Loader mode (`non-consent` or `consent`) and consent manager, if any:
