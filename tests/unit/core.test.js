@@ -8,23 +8,24 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Script } from "node:vm";
 import { test } from "node:test";
+import { parse } from "acorn";
 import {
   ASSET_ROUTE_PREFIX, BOOMERANG_BUNDLE_PATH, BOOMERANG_VERSION, LOADERS,
   boomerangAssetPath, boomerangBundleHash, boomerangBundleUrl,
   createBootstrap, createInstallation, loaderPath, normalizeOptions,
   readBoomerangBundle, readLoaderSource, serialize, setConsent,
-} from "../../src/core/index.js";
+} from "../../dist/core/index.js";
 import { codeWithoutComments, isInside, listSourceFiles, moduleSpecifiers, resolveSpecifier } from "./helpers/module-graph.js";
 
 const root = new URL("../../", import.meta.url);
-const options = { siteId: "test-site", beaconUrl: "https://collector.basicrum.test/beacon", loader: "consent" };
+const options = { brumSiteId: "test-site", beaconEndpoint: "https://collector.basicrum.test/beacon", loader: "consent" };
 
 test("options require an explicit valid loader and collector configuration", () => {
   for (const overrides of [
-    { loader: undefined }, { loader: "automatic" }, { siteId: " " },
-    { beaconUrl: "/beacon" }, { beaconUrl: "file:///beacon" },
-    { beaconUrl: "https://user:password@example.test/beacon" },
-    { beaconUrl: "https://example.test/beacon#fragment" },
+    { loader: undefined }, { loader: "automatic" }, { brumSiteId: " " },
+    { beaconEndpoint: "/beacon" }, { beaconEndpoint: "file:///beacon" },
+    { beaconEndpoint: "https://user:password@example.test/beacon" },
+    { beaconEndpoint: "https://example.test/beacon#fragment" },
     { enabled: "false" }, { debug: "true" }, { stripQueryString: "false" },
     { resourceTiming: null }, { continuity: 1 }, { pageType: "" },
     { waitAfterOnloadMs: -1 }, { waitAfterOnloadMs: 0.5 },
@@ -36,13 +37,20 @@ test("options require an explicit valid loader and collector configuration", () 
 });
 
 test("options are trimmed, defaulted and frozen", () => {
-  const settings = normalizeOptions({ ...options, siteId: "  padded  " });
+  const settings = normalizeOptions({ ...options, brumSiteId: "  padded  " });
   assert.ok(Object.isFrozen(settings));
   assert.deepEqual(settings, {
-    siteId: "padded", beaconUrl: "https://collector.basicrum.test/beacon", loader: "consent",
+    brumSiteId: "padded", beaconEndpoint: "https://collector.basicrum.test/beacon", loader: "consent",
     enabled: undefined, debug: false, pageType: "page", stripQueryString: true,
     waitAfterOnloadMs: 0, resourceTiming: true, continuity: true,
   });
+});
+
+test("the previous public option names and loader mode are rejected", () => {
+  const { brumSiteId, beaconEndpoint, ...rest } = options;
+  assert.throws(() => normalizeOptions({ ...rest, siteId: brumSiteId, beaconEndpoint }), /Unknown option: siteId/);
+  assert.throws(() => normalizeOptions({ ...rest, brumSiteId, beaconUrl: beaconEndpoint }), /Unknown option: beaconUrl/);
+  assert.throws(() => normalizeOptions({ ...options, loader: "standard" }), /Choose loader: "non-consent" or "consent" explicitly/);
 });
 
 test("asset catalogue points at the vendored files and hashes their content", () => {
@@ -61,13 +69,14 @@ test("asset catalogue points at the vendored files and hashes their content", ()
 });
 
 test("installation combines base path, bundle URL, generator and the selected loader", () => {
-  for (const loader of ["standard", "consent"]) {
+  for (const loader of ["non-consent", "consent"]) {
     for (const debug of [false, true]) {
       const settings = normalizeOptions({ ...options, loader, debug });
       const { assetPath, boomerangUrl, bootstrap } = createInstallation(settings, { generator: "astro", base: "/metrics/" });
       assert.equal(assetPath, boomerangAssetPath());
       assert.equal(boomerangUrl, `/metrics${assetPath}`);
       assert.doesNotThrow(() => new Script(bootstrap));
+      assert.doesNotThrow(() => parse(bootstrap, { ecmaVersion: 5, sourceType: "script" }));
       assert.ok(bootstrap.includes(readLoaderSource(loader, debug)));
       assert.ok(bootstrap.includes(serialize(boomerangUrl)));
       assert.ok(bootstrap.includes('"astro"'));
@@ -76,6 +85,7 @@ test("installation combines base path, bundle URL, generator and the selected lo
   }
   // The delay plugin and its unload flush travel inside the serialized configure().
   const delayed = createInstallation(normalizeOptions({ ...options, waitAfterOnloadMs: 5 }), { generator: "astro" }).bootstrap;
+  assert.doesNotThrow(() => parse(delayed, { ecmaVersion: 5, sourceType: "script" }));
   for (const needle of ["WaitAfterOnload", '"page_unload"', "real_sendBeacon", "clearTimeout"]) assert.ok(delayed.includes(needle), needle);
   const { boomerangUrl } = createInstallation(normalizeOptions(options), { generator: "next" });
   assert.equal(boomerangUrl, boomerangAssetPath());
@@ -122,7 +132,7 @@ test("consent helper is safe during server rendering and rejects ambiguous value
 test("core never imports a framework or anything outside src/core", () => {
   const coreDir = fileURLToPath(new URL("src/core/", root));
   const files = listSourceFiles(coreDir);
-  assert.ok(files.length >= 7, "expected the core source and declaration files");
+  assert.ok(files.length >= 5, "expected the core source and declaration files");
   for (const file of files) {
     const name = relative(coreDir, file);
     for (const { specifier, kind } of moduleSpecifiers(file)) {
@@ -133,11 +143,11 @@ test("core never imports a framework or anything outside src/core", () => {
       assert.ok(isInside(coreDir, target), `${name} imports "${specifier}", which resolves outside src/core`);
     }
     const code = codeWithoutComments(file);
-    if (name !== "assets.js") assert.equal(code.includes("vendor/"), false, `${name} reaches into vendor/ directly`);
+    if (name !== "assets.ts") assert.equal(code.includes("vendor/"), false, `${name} reaches into vendor/ directly`);
     assert.equal(/astro/i.test(code), false, `${name} mentions Astro`);
   }
   // The browser entry must stay importable from a page: no Node built-ins, no other modules.
-  assert.deepEqual(moduleSpecifiers(join(coreDir, "consent.js")), []);
+  assert.deepEqual(moduleSpecifiers(join(coreDir, "consent.ts")), []);
 });
 
 test("the boundary scanner sees every import form", () => {
@@ -188,20 +198,35 @@ test("the boundary scanner sees every import form", () => {
     assert.deepEqual(bySpecifier(moduleSpecifiers(declaration)), bySpecifier([
       { specifier: "node", kind: "reference" },
       { specifier: "astro", kind: "static" },
-      { specifier: "./core/index.js", kind: "static" },
+      { specifier: "./core/index.js", kind: "re-export" },
       { specifier: "./side-effect.js", kind: "side-effect" },
       { specifier: "../client.js", kind: "dynamic" },
       { specifier: "./legacy.js", kind: "static" },
       { specifier: "./after-a-fake-comment-start.js", kind: "static" },
     ]));
+    // These imports disappear from emitted JavaScript, but must still be
+    // checked in the TypeScript implementation itself.
+    const implementation = join(dir, "sample.ts");
+    writeFileSync(implementation, [
+      'import type { Hidden } from "./hidden.js";',
+      'export type { Options } from "./options.js";',
+      'type Lazy = import("./lazy.js").Lazy;',
+      'export function typed(value: Hidden): Lazy { return value; }',
+    ].join("\n"));
+    assert.deepEqual(moduleSpecifiers(implementation), [
+      { specifier: "./hidden.js", kind: "static" },
+      { specifier: "./options.js", kind: "re-export" },
+      { specifier: "./lazy.js", kind: "dynamic" },
+    ]);
     // Nested directories are listed, and a subtree can be excluded by path.
     mkdirSync(join(dir, "src", "core", "deep"), { recursive: true });
     mkdirSync(join(dir, "src", "nested"), { recursive: true });
-    for (const file of ["src/a.js", "src/core/b.js", "src/core/deep/c.d.ts", "src/nested/d.d.ts", "src/README.md"]) writeFileSync(join(dir, file), "");
+    for (const file of ["src/a.js", "src/core/b.ts", "src/core/deep/c.d.ts", "src/nested/d.d.ts", "src/README.md"]) writeFileSync(join(dir, file), "");
     const listed = listSourceFiles(join(dir, "src")).map((file) => relative(dir, file));
-    assert.deepEqual(listed, ["src/a.js", "src/core/b.js", "src/core/deep/c.d.ts", "src/nested/d.d.ts"]);
+    assert.deepEqual(listed, ["src/a.js", "src/core/b.ts", "src/core/deep/c.d.ts", "src/nested/d.d.ts"]);
     assert.deepEqual(listed.filter((file) => !isInside(join(dir, "src", "core"), join(dir, file))), ["src/a.js", "src/nested/d.d.ts"]);
     assert.equal(resolveSpecifier(join(dir, "src", "core", "a.js"), "./../index.js?raw"), join(dir, "src", "index.js"));
+    assert.equal(resolveSpecifier(join(dir, "src", "a.ts"), "./core/b.js"), join(dir, "src", "core", "b.ts"));
     assert.equal(isInside(join(dir, "src", "core"), join(dir, "src", "core-extra", "x.js")), false);
   } finally {
     rmSync(dir, { recursive: true, force: true });

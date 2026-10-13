@@ -1,7 +1,7 @@
 {
   "name": "@basicrum/astro",
   "version": "0.1.0",
-  "description": "Basicrum real user monitoring for Astro with standard and consent-controlled loaders.",
+  "description": "Basicrum real user monitoring for Astro with non-consent and consent-controlled loaders.",
   "homepage": "https://github.com/basicrum/basicrum-astro#readme",
   "bugs": {
     "url": "https://github.com/basicrum/basicrum-astro/issues"
@@ -14,16 +14,16 @@
   "license": "GPL-2.0-or-later",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "default": "./src/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./client": {
-      "types": "./src/client.d.ts",
-      "default": "./src/client.js"
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
     }
   },
   "files": [
-    "src",
+    "dist",
     "vendor",
     "LICENSE",
     "THIRD-PARTY-NOTICES.md"
@@ -38,24 +38,30 @@
     "@astrojs/node": "11.1.6",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
+    "@types/node": "22.20.5",
     "acorn": "8.18.0",
     "astro": "7.3.5",
     "eslint": "10.11.0",
     "globals": "17.12.0",
-    "typescript": "7.0.2"
+    "publint": "0.3.25",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0"
   },
   "scripts": {
-    "test": "npm run conventions && npm run typecheck && npm run lint && npm run test:unit && npm run test:browser",
-    "test:unit": "node --test tests/unit/*.test.js",
+    "test": "npm run conventions && npm run typecheck && npm run lint && npm run lint:package && npm run test:unit && npm run test:browser",
+    "test:unit": "npm run build && node --test tests/unit/*.test.js",
     "test:browser": "playwright test",
     "test:integration": "playwright test --project browser",
     "test:e2e": "playwright test --project e2e",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run build && tsc -p tests/tsconfig.json",
     "lint": "eslint .",
     "conventions": "sh tools/verify-ascii.sh && sh tools/verify-version-consistency.sh && sh tools/verify-boomerang-provenance.sh",
     "verify:package": "node tools/verify-package.mjs",
-    "example:dev": "astro dev --root examples/basic",
-    "example:build": "astro build --root examples/basic"
+    "example:dev": "npm run build && astro dev --root examples/basic",
+    "example:build": "npm run build && astro build --root examples/basic",
+    "build": "node tools/build.mjs",
+    "prepare": "npm run build",
+    "lint:package": "npm run build && publint --strict --pack npm"
   },
   "keywords": [
     "astro-integration",

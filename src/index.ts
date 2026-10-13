@@ -1,3 +1,6 @@
+import type { AstroIntegration } from "astro";
+import type { BasicrumOptions } from "./core/index.js";
+export type { BasicrumOptions, LoaderMode } from "./core/index.js";
 import { createInstallation, normalizeOptions } from "./core/index.js";
 
 /**
@@ -5,10 +8,8 @@ import { createInstallation, normalizeOptions } from "./core/index.js";
  *
  * This file is the Astro adapter. All Boomerang, loader and option logic
  * lives in ./core/ so that it can be reused by other frameworks.
- * @param {import('./index.d.ts').BasicrumOptions} options
- * @returns {import('astro').AstroIntegration}
  */
-export default function basicrum(options) {
+export default function basicrum(options: BasicrumOptions): AstroIntegration {
   const settings = normalizeOptions(options);
   return {
     name: "@basicrum/astro",

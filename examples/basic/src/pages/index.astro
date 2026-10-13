@@ -16,12 +16,12 @@
     <button id="withdraw">Withdraw permission</button>
     <p id="status" role="status"></p>
     <script>
-      import { setConsent } from "../../../../src/client.js";
+      import { setConsent } from "@basicrum/astro/client";
       const status = document.querySelector("#status")!;
       document.querySelector("#grant")!.addEventListener("click", () => {
         status.textContent = setConsent(true)
           ? "Permission granted. After a previous withdrawal, reload to resume monitoring."
-          : "Monitoring is disabled or the standard loader is selected.";
+          : "Monitoring is disabled or the non-consent loader is selected.";
       });
       document.querySelector("#withdraw")!.addEventListener("click", () => {
         status.textContent = setConsent(false)

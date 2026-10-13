@@ -13,7 +13,7 @@ export default defineConfig({
     { name: "e2e", testDir: "./tests/e2e" },
   ],
   webServer: {
-    command: "node tests/serve-fixtures.js",
+    command: "npm run build && node tests/serve-fixtures.js",
     url: "http://127.0.0.1:43217/",
     timeout: 120000,
     reuseExistingServer: false,

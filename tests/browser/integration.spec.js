@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const urls = {
-  standard: "http://127.0.0.1:43211/metrics/",
+  "non-consent": "http://127.0.0.1:43211/metrics/",
   consent: "http://127.0.0.1:43212/metrics/",
   disabled: "http://127.0.0.1:43213/metrics/",
   delayed: "http://127.0.0.1:43214/metrics/",
@@ -35,14 +35,14 @@ async function replayBootstrap(page) {
 }
 
 /** Beacons the local collector received for a site id since a timestamp. */
-async function collected(request, siteId, since) {
-  return (await receipts(request, siteId, since)).map((beacon) => beacon.params);
+async function collected(request, brumSiteId, since) {
+  return (await receipts(request, brumSiteId, since)).map((beacon) => beacon.params);
 }
 
 /** The same beacons with the collector's receipt time, for timing assertions. */
-async function receipts(request, siteId, since) {
+async function receipts(request, brumSiteId, since) {
   const response = await request.get(`${localCollector}/beacons?since=${since}`);
-  return (await response.json()).filter((beacon) => beacon.params.brum_site_id === siteId);
+  return (await response.json()).filter((beacon) => beacon.params.brum_site_id === brumSiteId);
 }
 
 async function observe(page) {
@@ -64,9 +64,9 @@ async function observe(page) {
   return { beacons, errors, unexpected, bundleRequests: () => bundleRequests };
 }
 
-test("standard loads the self-hosted bundle and sends configured metadata", async ({ page }) => {
+test("non-consent loads the self-hosted bundle and sends configured metadata", async ({ page }) => {
   const state = await observe(page);
-  await page.goto(`${urls.standard}?campaign=spring`);
+  await page.goto(`${urls["non-consent"]}?campaign=spring`);
   await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
   expect(state.beacons[0]).toMatchObject({ brum_site_id: "astro-test-site", p_gen: "astro", p_type: "home", sv: "15" });
   expect(state.beacons[0].u).not.toContain("campaign=spring");
@@ -79,7 +79,7 @@ test("standard loads the self-hosted bundle and sends configured metadata", asyn
 
 test("normal page navigation creates a fresh measurement with the next page type", async ({ page }) => {
   const state = await observe(page);
-  await page.goto(urls.standard);
+  await page.goto(urls["non-consent"]);
   await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
   await page.getByRole("link", { name: "Next page" }).click();
   await expect.poll(() => state.beacons.some((beacon) => beacon.p_type === "article")).toBe(true);
@@ -210,13 +210,13 @@ test("a decision made before the loader runs is not queued", async ({ page }) =>
 
 test("setConsent reports in the browser whether a consent loader is present", async ({ page }) => {
   const state = await observe(page);
-  for (const site of ["standard", "disabled"]) {
+  for (const site of ["non-consent", "disabled"]) {
     await page.goto(urls[site]);
     expect(await page.evaluate(() => [window.basicrumSetConsent(true), window.basicrumSetConsent(false)])).toEqual([false, false]);
   }
-  // The standard site keeps collecting: there is no consent state to withdraw.
+  // The non-consent site keeps collecting: there is no consent state to withdraw.
   expect(await page.evaluate(() => typeof window.basicRumBoomerangConfig)).toBe("undefined");
-  await page.goto(urls.standard);
+  await page.goto(urls["non-consent"]);
   await page.evaluate(() => window.basicrumSetConsent(false));
   expect(await page.evaluate(() => Boolean(window.basicRumBoomerangConfig))).toBe(true);
   await page.goto(urls.consent);
@@ -259,10 +259,10 @@ test.describe("unload traffic captured by a local collector", () => {
     const state = await observe(page);
     const since = Date.now();
     await page.goto(urls.localStandard);
-    await expect.poll(() => collected(request, "local-standard-site", since)).toHaveLength(1);
+    await expect.poll(() => collected(request, "local-non-consent-site", since)).toHaveLength(1);
     await page.getByRole("link", { name: "Next page" }).click();
-    await expect.poll(async () => (await collected(request, "local-standard-site", since)).some((beacon) => "rt.quit" in beacon)).toBe(true);
-    const beacons = await collected(request, "local-standard-site", since);
+    await expect.poll(async () => (await collected(request, "local-non-consent-site", since)).some((beacon) => "rt.quit" in beacon)).toBe(true);
+    const beacons = await collected(request, "local-non-consent-site", since);
     expect(beacons[0]).toMatchObject({ p_type: "home", p_gen: "astro" });
     expect(beacons.filter((beacon) => "rt.quit" in beacon)).toHaveLength(1);
     expect(state.errors).toEqual([]);
@@ -407,8 +407,8 @@ test("disabled builds emit neither loader nor Boomerang route", async ({ page, r
   expect(await response.text()).not.toContain("__basicrumInitialized");
   expect(state.bundleRequests()).toBe(0);
   expect(state.beacons).toEqual([]);
-  const standardHtml = await (await request.get(urls.standard)).text();
-  const bundle = standardHtml.match(/\/metrics\/_basicrum\/boomerang-[\w.]+\.js/)[0];
+  const nonConsentHtml = await (await request.get(urls["non-consent"])).text();
+  const bundle = nonConsentHtml.match(/\/metrics\/_basicrum\/boomerang-[\w.]+\.js/)[0];
   expect((await request.get(new URL(bundle, urls.disabled).href)).status()).toBe(404);
   expect(state.errors).toEqual([]);
 });
@@ -433,7 +433,7 @@ test("the original iframe fallback still initializes the real bundle", async ({ 
       return token === "preload" ? false : supports.call(this, token);
     };
   });
-  await page.goto(urls.standard);
+  await page.goto(urls["non-consent"]);
   await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
   expect(state.beacons[0]).toMatchObject({ p_gen: "astro", sm: "i" });
   expect(state.bundleRequests()).toBe(1);

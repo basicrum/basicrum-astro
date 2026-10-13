@@ -36,7 +36,7 @@ jobs:
       - name: Enforce repository conventions
         run: npm run conventions
 
-      - name: Check TypeScript declarations
+      - name: Build and check TypeScript
         run: npm run typecheck
 
       - name: Lint
@@ -82,7 +82,7 @@ jobs:
           if-no-files-found: ignore
 
   package:
-    name: Packed package installs and builds
+    name: Packed package lint, types and builds
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -99,5 +99,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Pack, install into a consumer and build
+      - name: Lint tarball, verify installed types and both loader builds
         run: npm run verify:package
