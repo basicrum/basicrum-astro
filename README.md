@@ -27,9 +27,9 @@ import basicrum from "@basicrum/astro";
 export default defineConfig({
   integrations: [
     basicrum({
-      siteId: "YOUR_BASICRUM_SITE_ID",
-      beaconUrl: "https://YOUR_COLLECTOR/beacon/catcher",
-      loader: "standard",
+      brumSiteId: "YOUR_BASICRUM_SITE_ID",
+      beaconEndpoint: "https://YOUR_COLLECTOR/beacon/catcher",
+      loader: "non-consent",
     }),
   ],
 });
@@ -47,7 +47,7 @@ The `loader` option is required. There is no implicit consent choice.
 
 | Value | Packaged loader | Behavior |
 | --- | --- | --- |
-| `"standard"` | `boomerang-loader-v15.min.js` | Starts loading Boomerang immediately. |
+| `"non-consent"` | `boomerang-loader-v15.min.js` | Starts loading Boomerang immediately; no consent decision is required. |
 | `"consent"` | `consent-boomerang-loader-v1-15.min.js` | Defines consent callbacks and waits for permission. |
 
 Only the selected loader is inserted. Its classic JavaScript runs in the page
@@ -55,6 +55,10 @@ head, after configuration and before Astro islands. Boomerang itself remains a
 separate same-origin asset under `/_basicrum/`, with a content hash in its filename.
 Astro's `base` setting is respected. The package does not copy files into your
 site's `public` directory or require the WordPress repository at runtime.
+
+If migrating from the earlier local API, rename `siteId` to `brumSiteId`,
+`beaconUrl` to `beaconEndpoint`, and `loader: "standard"` to
+`loader: "non-consent"`. The old names are rejected during configuration.
 
 ## Consent manager integration
 
@@ -80,7 +84,7 @@ window.OPT_OUT_BASICRUM_LOADER_WRAPPER();
 
 Run callbacks after the head loader has executed. A normal Astro module script
 runs after that loader. `setConsent()` returns `false` on the server, when the
-integration is disabled, or when the standard loader is selected. It does not
+integration is disabled, or when the non-consent loader is selected. It does not
 queue an early decision. The global callback types are included when importing
 `@basicrum/astro/client`.
 
@@ -107,9 +111,9 @@ withdrawal behavior.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `siteId` | Required | Public identifier sent as `brum_site_id`. |
-| `beaconUrl` | Required | Absolute HTTP(S) collector URL, without credentials or a fragment. |
-| `loader` | Required | `"standard"` or `"consent"`. |
+| `brumSiteId` | Required | Public identifier sent as `brum_site_id`. |
+| `beaconEndpoint` | Required | Absolute HTTP(S) collector URL, without credentials or a fragment. |
+| `loader` | Required | `"non-consent"` or `"consent"`. |
 | `enabled` | Builds: `true`; dev: `false` | Enable or disable injection and the asset route. |
 | `debug` | `false` | Include the unminified loader. |
 | `pageType` | `"page"` | Fallback value of `p_type`. |
@@ -190,19 +194,23 @@ npm run example:dev
 ```
 
 `npm test` runs the repository conventions (`npm run conventions`: ASCII-only
-text, version metadata, Boomerang provenance), the TypeScript declaration check,
-ESLint, the unit tests and the browser tests. Browser tests build local Astro
-fixtures with the real packaged Boomerang build and intercept all collector
-traffic; they never submit measurements to a production collector.
-`npm run verify:package` packs the package, installs the tarball into a
-temporary Astro consumer and builds it with a non-root base; it needs network
-access. Repository invariants and the release procedure are in
-[AGENTS.md](./AGENTS.md).
+text, version metadata, Boomerang provenance), the TypeScript build and public
+API type checks, ESLint, strict package linting, the unit tests and the browser
+tests. Browser tests build local Astro fixtures with the real packaged
+Boomerang build and intercept all collector traffic; they never submit
+measurements to a production collector.
+`npm run lint:package` rebuilds the package and runs `publint` against the
+files selected by npm for publication. Warnings are treated as errors.
+`npm run verify:package` packs the package, lints that exact tarball with the
+same strict settings, installs the tarball into a
+temporary Astro consumer, checks the installed declarations, and builds both
+loader modes with a non-root base; it needs network access. Repository invariants
+and the release procedure are in [AGENTS.md](./AGENTS.md).
 
 Browser tests are two Playwright projects:
 
 - `npm run test:e2e` runs `tests/e2e/`: one readable workflow spec per loader,
-  in the style of the WordPress plugin's loader specs. `standard-loader.spec.js`
+  in the style of the WordPress plugin's loader specs. `non-consent-loader.spec.js`
   shows immediate collection and per-page types; `consent-loader.spec.js` walks
   through inert start, denial, grant, withdrawal, reload and replaying the
   stored decision on the next page. Start here to understand what the
@@ -217,19 +225,29 @@ not a production consent manager.
 
 ### Package layout
 
+Implementation source lives in `src/` as TypeScript. `npm run build` cleans
+`dist/` and generates JavaScript plus `.d.ts` declarations. The public package
+exports point to `dist/`; npm includes that output and `vendor/`, alongside the
+package metadata, README and license notices. `npm ci` and `npm pack` build
+through the `prepare` lifecycle. Generated output is not committed.
+
+`src/env.d.ts` is a small ambient declaration for Vite's `?raw` imports; it is
+not a manually maintained copy of our API. Source imports use `.js` extensions
+because those are the filenames emitted by TypeScript.
+
 The source is split along the line where a future package boundary would go:
 
 | Path | Depends on | Purpose |
 | --- | --- | --- |
 | `src/core/` + `vendor/` | Node only | Options, bootstrap script, asset catalogue, consent helper, Boomerang and loaders. No Astro imports. |
-| `src/index.js` | `src/core/index.js`, Astro | The integration: reads Astro's base and command, injects the route and head script. |
-| `src/client.js` | `src/core/consent.js` | Browser entry re-exporting `setConsent()`. |
-| `src/boomerang-endpoint.js` | Vite `?raw` | Astro route serving the bundle. |
+| `src/index.ts` | `src/core/index.ts`, Astro | The integration: reads Astro's base and command, injects the route and head script. |
+| `src/client.ts` | `src/core/consent.ts` | Browser entry re-exporting `setConsent()`. |
+| `src/boomerang-endpoint.ts` | Vite `?raw` | Astro route serving the bundle. |
 
-Adapter files import the core only through `src/core/index.js` and
-`src/core/consent.js`. Unit tests parse every import, re-export and dynamic
-import in JavaScript files, scan declaration files for their import forms,
-and fail if either side crosses the boundary.
+Adapter files import the core only through `src/core/index.ts` and
+`src/core/consent.ts`. Unit tests parse every import, re-export and dynamic
+import in TypeScript source (including type-only imports) and fail if either
+side crosses the boundary.
 `tests/unit/core.test.js` covers the core and `tests/unit/integration.test.js`
 covers the Astro adapter. Read [`src/core/README.md`](./src/core/README.md)
 for the checklist to extract the core into `@basicrum/boomerang-core`.

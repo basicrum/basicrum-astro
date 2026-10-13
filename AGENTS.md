@@ -6,15 +6,21 @@ script and serves the vendored Boomerang bundle from `/_basicrum/`.
 
 ## Structure
 
-- `src/index.js` is the Astro adapter: it reads Astro's `base` and `command`,
-  injects the prerendered asset route (`src/boomerang-endpoint.js`) and the head
-  script. `src/client.js` is the browser entry re-exporting `setConsent()`.
-- `src/core/` is framework-neutral: `options.js` validates options,
-  `bootstrap.js` generates the head script, `assets.js` is the only core module
+- Implementation source is TypeScript in `src/`. `npm run build` uses `tsc`
+  to generate JavaScript and declarations in `dist/`, preserving module paths
+  and function names. `dist/` is ignored by Git and is the published code.
+  `npm ci` and `npm pack` build it through the `prepare` lifecycle. Tests and
+  examples consume the generated code. `src/env.d.ts` only declares Vite's
+  `?raw` imports; public API declarations are generated, never hand-edited.
+- `src/index.ts` is the Astro adapter: it reads Astro's `base` and `command`,
+  injects the prerendered asset route (`src/boomerang-endpoint.ts`) and the head
+  script. `src/client.ts` is the browser entry re-exporting `setConsent()`.
+- `src/core/` is framework-neutral: `options.ts` validates options,
+  `bootstrap.ts` generates the head script, `assets.ts` is the only core module
   that knows the Boomerang version and vendored file names (the Astro endpoint
   repeats the bundle name in its static `?raw` import, which a unit test keeps
-  in sync), `consent.js` applies a consent decision. Adapters import only `src/core/index.js` and
-  `src/core/consent.js`. Unit tests enforce the boundary in both directions;
+  in sync), `consent.ts` applies a consent decision. Adapters import only
+  `src/core/index.ts` and `src/core/consent.ts`. Unit tests enforce the boundary in both directions;
   `src/core/README.md` holds the checklist for extracting the core into its own
   package.
 - `vendor/` holds the loaders and the Boomerang build, copied unchanged from
@@ -42,17 +48,20 @@ script and serves the vendored Boomerang bundle from `/_basicrum/`.
   adapter; `vendor/` changes only by copying a newer WordPress release.
 - Upgrade the vendored Boomerang build and loaders together with
   `vendor/provenance.json`, `THIRD-PARTY-NOTICES.md` and `BOOMERANG_VERSION`
-  in `src/core/assets.js`. The unit, browser and end-to-end tests assert the
+  in `src/core/assets.ts`. The unit, browser and end-to-end tests assert the
   literal version as well. Run the consent withdrawal tests before releasing.
 - Tests never send beacons to a real collector. Fixtures use the intercepted
   host `collector.basicrum.test`; the example uses `collector.example.invalid`.
+- Required public options are `brumSiteId`, `beaconEndpoint` and `loader`.
+  Loader modes are `"non-consent"` (immediate collection without a consent
+  decision) and `"consent"` (waits for the site's consent manager).
 - `loader` stays required with no implicit consent default. There is no
   `scriptUrl` override: the loaders and the `basicRumBoomerangConfig` contract
   ship together.
 - `enabled` defaults to true for builds and false for `astro dev`.
 - A second `basicrum()` registration fails `astro:config:setup`; there is no
   order-dependent winner.
-- The bootstrap is serialized from `configure()` in `src/core/bootstrap.js`
+- The bootstrap is serialized from `configure()` in `src/core/bootstrap.ts`
   and runs as a classic script: keep it free of module syntax, keep the
   generator name (`p_gen`) a parameter, and never restore configuration that a
   consent withdrawal cleared.
@@ -67,15 +76,20 @@ npx playwright install chromium
 npm run conventions
 npm run typecheck
 npm run lint
+npm run lint:package
 npm run test:unit
 npm run test:browser
 npm run verify:package
 ```
 
-`npm test` runs the first five checks and the browser tests. `npm run
-verify:package` packs the package, installs the tarball into a temporary Astro
-consumer and builds it with a non-root base; it needs network access. CI runs
-all of them on every push to `main` and on every pull request.
+`npm test` builds the package, checks conventions, types, source lint and strict
+package lint, and runs the unit and browser tests. `npm run lint:package`
+builds before checking npm's published file selection with `publint`; warnings
+are errors. `npm run verify:package` packs and strictly lints the exact tarball,
+installs the tarball into a temporary Astro
+consumer, checks the installed declarations and builds both loader modes with
+a non-root base; it needs network access. CI runs all of them on every push to
+`main` and on every pull request.
 
 ## Releases
 
@@ -87,7 +101,8 @@ all of them on every push to `main` and on every pull request.
    `main` and the tag.
 4. The Release workflow refuses a tag whose commit is not on `main`, verifies
    the tag against the version, runs every check,
-   attaches the npm tarball and its SHA-256 to a GitHub Release, and publishes
+   strictly lints the final release tarball before calculating its SHA-256,
+   attaches both to a GitHub Release, and publishes
    to npm only when the `NPM_TOKEN` repository secret exists. Verification and
    packaging run in a job without secrets; only the separate publish job, bound
    to the `release` environment, receives the npm credential, and only in its

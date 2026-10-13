@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 
 /** Built Astro fixtures served by tests/serve-fixtures.js (base path /metrics/). */
 export const SITES = {
-  standard: "http://127.0.0.1:43211/metrics/",
+  "non-consent": "http://127.0.0.1:43211/metrics/",
   consent: "http://127.0.0.1:43212/metrics/",
 };
 
@@ -16,7 +16,7 @@ const MEASUREMENT_COOKIES = ["RT", "BA"];
  *
  * @param {import('@playwright/test').Page} page
  * @param {import('@playwright/test').BrowserContext} context
- * @param {"standard" | "consent"} loader
+ * @param {"non-consent" | "consent"} loader
  */
 export async function createSiteHarness(page, context, loader) {
   const site = SITES[loader];

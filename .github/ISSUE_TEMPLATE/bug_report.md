@@ -22,7 +22,7 @@ assignees: ''
 - `@basicrum/astro` version:
 - Astro version and output mode (static, server, adapter):
 - Node.js version:
-- Loader mode (`standard` or `consent`) and consent manager, if any:
+- Loader mode (`non-consent` or `consent`) and consent manager, if any:
 - Browser:
 
 ## Configuration

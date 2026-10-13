@@ -7,6 +7,12 @@ entry must match `version` in `package.json`; `npm run conventions` checks it.
 
 ## [Unreleased]
 
+### Added
+
+- Strict package linting with `publint`, included in `npm test`. The
+  packed-consumer check and release workflow also lint their actual tarballs;
+  warnings and errors block verification or release.
+
 ### Fixed
 
 - A beacon that Boomerang had queued just before consent was withdrawn is no
@@ -18,6 +24,17 @@ entry must match `version` in `package.json`; `npm run conventions` checks it.
 
 ### Changed
 
+- Author the integration in TypeScript and publish generated JavaScript and
+  declarations from `dist/`. Builds now check implementation types; tests and
+  examples exercise generated code, and the packed-consumer check validates
+  installed declarations and both loader modes. Public entry points and
+  loader behavior are unchanged by this migration.
+
+- Rename the required options `siteId` to `brumSiteId` and `beaconUrl` to
+  `beaconEndpoint`, and the immediate loader mode `"standard"` to
+  `"non-consent"`. This is a breaking configuration change: the previous
+  names are rejected. The non-consent loader still starts immediately without
+  a consent decision; the `"consent"` mode still waits for one.
 - Registering the integration more than once now fails configuration with an
   actionable error instead of silently keeping the first registration.
 

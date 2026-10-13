@@ -1,3 +1,6 @@
+import type { NormalizedOptions } from "./options.js";
+export type { BasicrumOptions, LoaderMode, NormalizedOptions } from "./options.js";
+
 /**
  * Framework-neutral core of the Basicrum Boomerang installation.
  *
@@ -26,15 +29,24 @@ export { createBootstrap, serialize } from "./bootstrap.js";
 export { setConsent } from "./consent.js";
 export { normalizeOptions } from "./options.js";
 
-/**
- * Resolve everything an adapter must emit for one installation.
- * @param {object} settings Output of normalizeOptions().
- * @param {object} context
- * @param {string} context.generator Reported as p_gen, e.g. "astro".
- * @param {string} [context.base] Site base path prefixed to public URLs. Default "/".
- * @returns {{ assetPath: string, boomerangUrl: string, bootstrap: string }}
- */
-export function createInstallation(settings, { generator, base = "/" }) {
+export interface InstallationContext {
+  /** Reported as p_gen; identifies the adapter, e.g. "astro". */
+  generator: string;
+  /** Site base path prefixed to public URLs. Default "/". */
+  base?: string;
+}
+
+export interface Installation {
+  /** Public path (without base) at which the adapter must serve the bundle. */
+  assetPath: string;
+  /** Full public URL the bootstrap points Boomerang at. */
+  boomerangUrl: string;
+  /** Inline classic head script: configuration plus the selected loader. */
+  bootstrap: string;
+}
+
+/** Resolve everything an adapter must emit for one installation. */
+export function createInstallation(settings: NormalizedOptions, { generator, base = "/" }: InstallationContext): Installation {
   const assetPath = boomerangAssetPath();
   const boomerangUrl = `${String(base).replace(/\/$/, "")}${assetPath}`;
   const bootstrap = createBootstrap({

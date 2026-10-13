@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { SITE_ID, createSiteHarness } from "./fixtures/browser.js";
 
-test.describe("standard loader", () => {
+test.describe("non-consent loader", () => {
   test("loads Boomerang immediately and sends the page-load beacon", async ({ page, context }) => {
-    const site = await createSiteHarness(page, context, "standard");
+    const site = await createSiteHarness(page, context, "non-consent");
 
     await site.visit();
     await site.waitForBeacon();
@@ -24,7 +24,7 @@ test.describe("standard loader", () => {
   });
 
   test("measures every full page load with that page's type", async ({ page, context }) => {
-    const site = await createSiteHarness(page, context, "standard");
+    const site = await createSiteHarness(page, context, "non-consent");
 
     await site.visit();
     await site.waitForBeacon(1);
@@ -36,7 +36,7 @@ test.describe("standard loader", () => {
   });
 
   test("does not report query strings to the collector", async ({ page, context }) => {
-    const site = await createSiteHarness(page, context, "standard");
+    const site = await createSiteHarness(page, context, "non-consent");
 
     await site.visit("?campaign=spring&email=visitor%40example.test");
     await site.waitForBeacon();
