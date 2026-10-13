@@ -22,8 +22,12 @@ lock_version=$( node -p "require('./package-lock.json').version" )
 lock_root_version=$( node -p "require('./package-lock.json').packages[''].version" )
 changelog_version=$( sed -n 's/^## \[\([0-9][^]]*\)\].*$/\1/p' CHANGELOG.md | head -n 1 )
 
-printf '%s\n' "$package_version" | grep -Eq '^[0-9]+(\.[0-9]+){2}(-[0-9A-Za-z.]+)?$' ||
-	fail "package.json version ($package_version) must use an X.Y.Z version format."
+# Full Semantic Versioning 2.0.0 grammar (semver.org), evaluated by Node so the
+# check does not depend on the platform's grep dialect.
+node -e '
+	const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
+	process.exit(semver.test(process.argv[1]) ? 0 : 1);
+' "$package_version" || fail "package.json version ($package_version) is not a valid Semantic Versioning 2.0.0 version."
 [ "$lock_version" = "$package_version" ] ||
 	fail "package-lock.json version ($lock_version) does not match package.json ($package_version). Run: npm install --package-lock-only"
 [ "$lock_root_version" = "$package_version" ] ||

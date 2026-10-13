@@ -1,10 +1,13 @@
+import type { LoaderMode } from "./options.js";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 /**
- * Vendored asset catalogue. This module is the only place that knows the
- * Boomerang version, the loader filenames and where they live on disk.
- * Adapters must never reach into vendor/ directly.
+ * Vendored asset catalogue. This module is the only place in the core that
+ * knows the Boomerang version, the loader filenames and where they live on
+ * disk. Adapters must never reach into vendor/ directly. The one exception is
+ * the Astro endpoint's static ?raw import of the bundle, which a unit test
+ * keeps in sync with BOOMERANG_BUNDLE_PATH.
  */
 export const BOOMERANG_VERSION = "1.815.60";
 
@@ -12,7 +15,7 @@ export const BOOMERANG_VERSION = "1.815.60";
 export const BOOMERANG_BUNDLE_PATH = `vendor/boomerang/boomerang-${BOOMERANG_VERSION}.cutting-edge.min.js`;
 
 export const LOADERS = Object.freeze({
-  standard: "boomerang-loader-v15",
+  "non-consent": "boomerang-loader-v15",
   consent: "consent-boomerang-loader-v1-15",
 });
 
@@ -29,7 +32,7 @@ export function readBoomerangBundle() {
   return readFileSync(boomerangBundleUrl);
 }
 
-let cachedHash;
+let cachedHash: string | undefined;
 
 /** First 12 hex characters of the bundle's SHA-256, for content-addressed URLs. */
 export function boomerangBundleHash() {
@@ -48,12 +51,12 @@ export function boomerangAssetPath() {
 }
 
 /** Vendor-relative path of the selected loader file. */
-export function loaderPath(loader, debug = false) {
+export function loaderPath(loader: LoaderMode, debug = false): string {
   if (!(loader in LOADERS)) throw new TypeError(`[basicrum] Unknown loader: ${loader}.`);
   return `vendor/loaders/${LOADERS[loader]}${debug ? "" : ".min"}.js`;
 }
 
 /** @returns {string} Classic-script source of the selected loader. */
-export function readLoaderSource(loader, debug = false) {
+export function readLoaderSource(loader: LoaderMode, debug = false): string {
   return readFileSync(new URL(loaderPath(loader, debug).replace(/^vendor\//, ""), vendorRoot), "utf8");
 }

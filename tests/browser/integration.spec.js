@@ -1,13 +1,49 @@
 import { expect, test } from "@playwright/test";
 
 const urls = {
-  standard: "http://127.0.0.1:43211/metrics/",
+  "non-consent": "http://127.0.0.1:43211/metrics/",
   consent: "http://127.0.0.1:43212/metrics/",
   disabled: "http://127.0.0.1:43213/metrics/",
   delayed: "http://127.0.0.1:43214/metrics/",
   ssr: "http://127.0.0.1:43215/metrics/",
   dev: "http://127.0.0.1:43216/metrics/",
+  localStandard: "http://127.0.0.1:43219/metrics/",
+  localConsent: "http://127.0.0.1:43220/metrics/",
+  localDelayed: "http://127.0.0.1:43221/metrics/",
 };
+const localCollector = "http://127.0.0.1:43218";
+
+async function measurementCookies(context) {
+  return (await context.cookies()).filter((cookie) => ["RT", "BA"].includes(cookie.name)).map((cookie) => cookie.name).sort();
+}
+
+/** Boomerang cannot set its own cookies on 127.0.0.1, so seed them as a positive control. */
+async function seedMeasurementCookies(page, context) {
+  await page.evaluate(() => {
+    document.cookie = "RT=seeded; path=/; SameSite=Strict";
+    document.cookie = "BA=seeded; path=/; SameSite=Strict";
+  });
+  expect(await measurementCookies(context)).toEqual(["BA", "RT"]);
+}
+
+/** Re-execute the emitted head bootstrap, as a framework re-evaluating head scripts would. */
+async function replayBootstrap(page) {
+  const content = await page.evaluate(() => [...document.scripts]
+    .find((script) => !script.src && script.textContent.includes("basicRumBoomerangConfig"))?.textContent);
+  expect(content).toBeTruthy();
+  await page.addScriptTag({ content });
+}
+
+/** Beacons the local collector received for a site id since a timestamp. */
+async function collected(request, brumSiteId, since) {
+  return (await receipts(request, brumSiteId, since)).map((beacon) => beacon.params);
+}
+
+/** The same beacons with the collector's receipt time, for timing assertions. */
+async function receipts(request, brumSiteId, since) {
+  const response = await request.get(`${localCollector}/beacons?since=${since}`);
+  return (await response.json()).filter((beacon) => beacon.params.brum_site_id === brumSiteId);
+}
 
 async function observe(page) {
   const beacons = [], errors = [], unexpected = [];
@@ -22,15 +58,15 @@ async function observe(page) {
     if (url.hostname === "collector.basicrum.test") {
       beacons.push(Object.fromEntries(new URLSearchParams(request.postData() || url.search)));
       await route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" }, body: "" });
-    } else if (url.hostname === "127.0.0.1") await route.continue();
+    } else if (url.hostname === "127.0.0.1" || url.hostname.endsWith(".localhost")) await route.continue();
     else { unexpected.push(url.href); await route.abort(); }
   });
   return { beacons, errors, unexpected, bundleRequests: () => bundleRequests };
 }
 
-test("standard loads the self-hosted bundle and sends configured metadata", async ({ page }) => {
+test("non-consent loads the self-hosted bundle and sends configured metadata", async ({ page }) => {
   const state = await observe(page);
-  await page.goto(`${urls.standard}?campaign=spring`);
+  await page.goto(`${urls["non-consent"]}?campaign=spring`);
   await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
   expect(state.beacons[0]).toMatchObject({ brum_site_id: "astro-test-site", p_gen: "astro", p_type: "home", sv: "15" });
   expect(state.beacons[0].u).not.toContain("campaign=spring");
@@ -43,7 +79,7 @@ test("standard loads the self-hosted bundle and sends configured metadata", asyn
 
 test("normal page navigation creates a fresh measurement with the next page type", async ({ page }) => {
   const state = await observe(page);
-  await page.goto(urls.standard);
+  await page.goto(urls["non-consent"]);
   await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
   await page.getByRole("link", { name: "Next page" }).click();
   await expect.poll(() => state.beacons.some((beacon) => beacon.p_type === "article")).toBe(true);
@@ -53,11 +89,12 @@ test("normal page navigation creates a fresh measurement with the next page type
 test("consent is inert before grant and denial still permits a later grant", async ({ page, context }) => {
   const state = await observe(page);
   await page.goto(urls.consent);
+  await seedMeasurementCookies(page, context);
   await page.getByRole("button", { name: "Deny", exact: true }).click();
   await page.waitForTimeout(200);
   expect(state.bundleRequests()).toBe(0);
   expect(state.beacons).toEqual([]);
-  expect((await context.cookies()).filter((cookie) => ["RT", "BA"].includes(cookie.name))).toEqual([]);
+  expect(await measurementCookies(context)).toEqual([]);
   await page.getByRole("button", { name: "Grant", exact: true }).click();
   await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
   expect(state.beacons[0]).toMatchObject({ p_gen: "astro", brum_site_id: "astro-test-site" });
@@ -78,12 +115,14 @@ test("withdrawal during download keeps the real bundle uninitialized", async ({ 
   await page.getByRole("button", { name: "Grant", exact: true }).click();
   await expect.poll(state.bundleRequests).toBe(1);
   await page.getByRole("button", { name: "Deny", exact: true }).click();
+  // Granting again while the withdrawn download is still in flight changes nothing.
+  await page.getByRole("button", { name: "Grant", exact: true }).click();
   release();
   await expect.poll(() => page.evaluate(() => window.BOOMR?.version)).toBe("1.815.60");
   await page.waitForTimeout(500);
   expect(await page.evaluate(() => window.basicRumInitConfig)).toBeNull();
   expect(state.beacons).toEqual([]);
-  expect((await context.cookies()).filter((cookie) => ["RT", "BA"].includes(cookie.name))).toEqual([]);
+  expect(await measurementCookies(context)).toEqual([]);
   expect(state.errors).toEqual([]);
 });
 
@@ -92,15 +131,21 @@ test("withdrawal after initialization stops further beacons and clears cookies",
   await page.goto(urls.consent);
   await page.getByRole("button", { name: "Grant", exact: true }).click();
   await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
+  await seedMeasurementCookies(page, context);
   await page.getByRole("button", { name: "Deny", exact: true }).click();
+  expect(await measurementCookies(context)).toEqual([]);
   const before = state.beacons.length;
+  // A forced sendBeacon() after the page-load beacon sends nothing even with
+  // consent (RT resets its completion), so this is not the blocking proof;
+  // the local-collector tests cover a send queued before withdrawal.
   await page.evaluate(() => window.BOOMR.sendBeacon());
   await page.getByRole("button", { name: "Grant", exact: true }).click();
+  await replayBootstrap(page);
   await page.waitForTimeout(500);
   expect(state.beacons.length).toBe(before);
   expect(state.bundleRequests()).toBe(1);
   expect(await page.evaluate(() => window.basicRumBoomerangConfig)).toBeNull();
-  expect((await context.cookies()).filter((cookie) => ["RT", "BA"].includes(cookie.name))).toEqual([]);
+  expect(await measurementCookies(context)).toEqual([]);
   expect(state.errors).toEqual([]);
 });
 
@@ -114,8 +159,237 @@ test("Astro swaps do not reload Boomerang or restore withdrawn configuration", a
   await expect(page.getByRole("heading", { name: "Next route" })).toBeVisible();
   expect(await page.evaluate(() => window.__testSameDocument)).toBe(true);
   expect(await page.evaluate(() => window.basicRumBoomerangConfig)).toBeNull();
+  // Astro deduplicates identical inline scripts on a swap, so force the
+  // bootstrap to run again: the guard must keep the withdrawn state.
+  await replayBootstrap(page);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.basicRumBoomerangConfig)).toBeNull();
+  expect(await page.evaluate(() => typeof window.OPT_IN_BASICRUM_LOADER_WRAPPER)).toBe("function");
   expect(state.bundleRequests()).toBe(1);
   expect(state.errors).toEqual([]);
+});
+
+test("withdrawal removes host-only and parent-domain cookies on a real hostname", async ({ page, context }) => {
+  const state = await observe(page);
+  // Chromium resolves *.localhost to the loopback address, so the consent
+  // fixture can be visited under a name with a parent domain.
+  const site = "http://site.basicrum.localhost:43212/metrics/";
+  const cookies = async () => (await context.cookies(site))
+    .filter((cookie) => ["RT", "BA"].includes(cookie.name))
+    .map((cookie) => `${cookie.name}@${cookie.domain}`).sort();
+  await page.goto(site);
+  await page.evaluate(() => {
+    document.cookie = "RT=seeded; path=/; SameSite=Strict";
+    document.cookie = "BA=seeded; path=/; domain=basicrum.localhost; SameSite=Strict";
+  });
+  expect(await cookies()).toEqual(["BA@.basicrum.localhost", "RT@site.basicrum.localhost"]);
+  await page.getByRole("button", { name: "Grant", exact: true }).click();
+  await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
+  expect(await cookies()).toContain("BA@.basicrum.localhost");
+  await page.getByRole("button", { name: "Deny", exact: true }).click();
+  expect(await cookies()).toEqual([]);
+  expect(await page.evaluate(() => window.basicRumBoomerangConfig)).toBeNull();
+  expect(state.errors).toEqual([]);
+  expect(state.unexpected).toEqual([]);
+});
+
+test("a decision made before the loader runs is not queued", async ({ page }) => {
+  const state = await observe(page);
+  await page.addInitScript(() => {
+    window.__earlyCallback = typeof window.OPT_IN_BASICRUM_LOADER_WRAPPER;
+    try { window.OPT_IN_BASICRUM_LOADER_WRAPPER(); } catch (error) { window.__earlyError = error.name; }
+  });
+  await page.goto(urls.consent);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => [window.__earlyCallback, window.__earlyError])).toEqual(["undefined", "TypeError"]);
+  expect(await page.evaluate(() => typeof window.OPT_IN_BASICRUM_LOADER_WRAPPER)).toBe("function");
+  expect(state.bundleRequests()).toBe(0);
+  expect(state.beacons).toEqual([]);
+  expect(state.errors).toEqual([]);
+});
+
+test("setConsent reports in the browser whether a consent loader is present", async ({ page }) => {
+  const state = await observe(page);
+  for (const site of ["non-consent", "disabled"]) {
+    await page.goto(urls[site]);
+    expect(await page.evaluate(() => [window.basicrumSetConsent(true), window.basicrumSetConsent(false)])).toEqual([false, false]);
+  }
+  // The non-consent site keeps collecting: there is no consent state to withdraw.
+  expect(await page.evaluate(() => typeof window.basicRumBoomerangConfig)).toBe("undefined");
+  await page.goto(urls["non-consent"]);
+  await page.evaluate(() => window.basicrumSetConsent(false));
+  expect(await page.evaluate(() => Boolean(window.basicRumBoomerangConfig))).toBe(true);
+  await page.goto(urls.consent);
+  expect(await page.evaluate(() => window.basicrumSetConsent(true))).toBe(true);
+  await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.basicrumSetConsent(false))).toBe(true);
+  expect(await page.evaluate(() => window.basicRumBoomerangConfig)).toBeNull();
+  expect(state.errors).toEqual([]);
+});
+
+test("no separate consent flag is stored by the integration", async ({ page, context }) => {
+  const state = await observe(page);
+  await page.goto(urls.consent);
+  await page.getByRole("button", { name: "Grant", exact: true }).click();
+  await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
+  const storage = () => page.evaluate(() => [localStorage.length, sessionStorage.length]);
+  expect(await storage()).toEqual([0, 0]);
+  const names = (await context.cookies()).map((cookie) => cookie.name);
+  expect(names.filter((name) => !["RT", "BA"].includes(name))).toEqual([]);
+  await page.getByRole("button", { name: "Deny", exact: true }).click();
+  expect(await storage()).toEqual([0, 0]);
+  expect((await context.cookies()).map((cookie) => cookie.name)).toEqual([]);
+  await page.reload();
+  expect(await page.evaluate(() => typeof window.BOOMR.version)).toBe("undefined");
+  expect(state.bundleRequests()).toBe(1);
+  expect(state.errors).toEqual([]);
+});
+
+test.describe("unload traffic captured by a local collector", () => {
+  test.describe.configure({ mode: "serial" });
+
+  // Closing a page sends its unload beacon; give it time to land before the
+  // next test records its start time, so late traffic cannot cross over.
+  test.afterEach(async ({ page }) => {
+    await page.close();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  });
+
+  test("a normal exit sends the unload beacon (positive control)", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await page.goto(urls.localStandard);
+    await expect.poll(() => collected(request, "local-non-consent-site", since)).toHaveLength(1);
+    await page.getByRole("link", { name: "Next page" }).click();
+    await expect.poll(async () => (await collected(request, "local-non-consent-site", since)).some((beacon) => "rt.quit" in beacon)).toBe(true);
+    const beacons = await collected(request, "local-non-consent-site", since);
+    expect(beacons[0]).toMatchObject({ p_type: "home", p_gen: "astro" });
+    expect(beacons.filter((beacon) => "rt.quit" in beacon)).toHaveLength(1);
+    expect(state.errors).toEqual([]);
+  });
+
+  test("withdrawal followed by leaving the page sends nothing", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await page.goto(urls.localConsent);
+    await page.getByRole("button", { name: "Grant", exact: true }).click();
+    await expect.poll(() => collected(request, "local-consent-site", since)).toHaveLength(1);
+    await page.getByRole("button", { name: "Deny", exact: true }).click();
+    await page.getByRole("link", { name: "Next page" }).click();
+    await expect(page.getByRole("heading", { name: "Next page" })).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(await collected(request, "local-consent-site", since)).toHaveLength(1);
+    expect(state.bundleRequests()).toBe(1);
+    expect(state.errors).toEqual([]);
+  });
+
+  // Boomerang defers each send through requestIdleCallback. Capturing that
+  // scheduler once the delay timer is armed makes the race "queued before
+  // withdrawal, run afterwards" deterministic: when the timer fires, the first
+  // beacon is queued but not transmitted until the captured callback runs.
+  async function queueFirstBeaconAtExpiry(page, request, since) {
+    await page.goto(urls.localDelayed);
+    await page.getByRole("button", { name: "Grant", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.BOOMR.plugins.WaitAfterOnload.started)).toBe(true);
+    await page.evaluate(() => {
+      window.__deferred = [];
+      window.requestIdleCallback = (callback) => { window.__deferred.push(callback); return 1; };
+    });
+    await expect.poll(() => page.evaluate(() => window.BOOMR.plugins.WaitAfterOnload.complete), { timeout: 5000 }).toBe(true);
+    expect(await page.evaluate(() => window.__deferred.length)).toBeGreaterThan(0);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+  }
+  const runDeferred = (page) => page.evaluate(() => { while (window.__deferred.length) window.__deferred.shift()(); });
+
+  test("control: the send queued at delay expiry is transmitted when consent stands", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await queueFirstBeaconAtExpiry(page, request, since);
+    await runDeferred(page);
+    await expect.poll(() => collected(request, "local-delayed-site", since)).toHaveLength(1);
+    expect((await collected(request, "local-delayed-site", since))[0]).toMatchObject({ p_type: "home" });
+    expect(state.errors).toEqual([]);
+  });
+
+  test("a send queued before withdrawal is not transmitted afterwards", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await queueFirstBeaconAtExpiry(page, request, since);
+    await page.evaluate(() => window.OPT_OUT_BASICRUM_LOADER_WRAPPER());
+    expect(await page.evaluate(() => window.basicRumBoomerangConfig)).toBeNull();
+    await runDeferred(page);
+    await page.waitForTimeout(500);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+    expect(state.errors).toEqual([]);
+  });
+
+  test("leaving after expiry with the send still queued sends the first beacon, then the unload beacon", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await queueFirstBeaconAtExpiry(page, request, since);
+    await page.getByRole("link", { name: "Next page" }).click();
+    await expect(page.getByRole("heading", { name: "Next page" })).toBeVisible();
+    await expect.poll(() => collected(request, "local-delayed-site", since)).toHaveLength(2);
+    const beacons = await collected(request, "local-delayed-site", since);
+    expect(beacons.filter((beacon) => !("rt.quit" in beacon))).toHaveLength(1);
+    expect(beacons.filter((beacon) => "rt.quit" in beacon)).toHaveLength(1);
+    expect(state.errors).toEqual([]);
+  });
+
+  test("the first beacon waits for the configured delay", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await page.goto(urls.localDelayed);
+    await page.getByRole("button", { name: "Grant", exact: true }).click();
+    const granted = Date.now();
+    await page.waitForTimeout(700);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+    await expect.poll(() => collected(request, "local-delayed-site", since), { timeout: 5000 }).toHaveLength(1);
+    // The timer is armed after the grant click returns, so the collector's
+    // receipt time must be at least the configured delay after it.
+    const [{ at, params: beacon }] = await receipts(request, "local-delayed-site", since);
+    expect(at - granted).toBeGreaterThanOrEqual(1400);
+    expect(beacon).toMatchObject({ p_type: "home" });
+    expect("rt.quit" in beacon).toBe(false);
+    expect(await page.evaluate(() => [window.BOOMR.plugins.WaitAfterOnload.complete, window.BOOMR.plugins.WaitAfterOnload.timer])).toEqual([true, null]);
+    expect(state.errors).toEqual([]);
+  });
+
+  test("leaving during the delay still sends the first beacon, then the unload beacon", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await page.goto(urls.localDelayed);
+    await page.getByRole("button", { name: "Grant", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.BOOMR.plugins.WaitAfterOnload.started)).toBe(true);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+    await page.getByRole("link", { name: "Next page" }).click();
+    await expect(page.getByRole("heading", { name: "Next page" })).toBeVisible();
+    await expect.poll(() => collected(request, "local-delayed-site", since)).toHaveLength(2);
+    const beacons = await collected(request, "local-delayed-site", since);
+    expect(beacons.filter((beacon) => !("rt.quit" in beacon))).toHaveLength(1);
+    expect(beacons.filter((beacon) => "rt.quit" in beacon)).toHaveLength(1);
+    expect(beacons[0]).toMatchObject({ p_type: "home", p_gen: "astro" });
+    await page.waitForTimeout(500);
+    expect(await collected(request, "local-delayed-site", since)).toHaveLength(2);
+    expect(state.errors).toEqual([]);
+  });
+
+  test("withdrawal during the delay cancels the pending beacon, also on exit", async ({ page, request }) => {
+    const state = await observe(page);
+    const since = Date.now();
+    await page.goto(urls.localDelayed);
+    await page.getByRole("button", { name: "Grant", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.BOOMR.plugins.WaitAfterOnload.started)).toBe(true);
+    await page.getByRole("button", { name: "Deny", exact: true }).click();
+    await page.waitForTimeout(1800);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+    await page.getByRole("link", { name: "Next page" }).click();
+    await expect(page.getByRole("heading", { name: "Next page" })).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(await collected(request, "local-delayed-site", since)).toEqual([]);
+    expect(state.bundleRequests()).toBe(1);
+    expect(state.errors).toEqual([]);
+  });
 });
 
 test("a delayed first beacon works when consent arrives after window load", async ({ page }) => {
@@ -133,8 +407,8 @@ test("disabled builds emit neither loader nor Boomerang route", async ({ page, r
   expect(await response.text()).not.toContain("__basicrumInitialized");
   expect(state.bundleRequests()).toBe(0);
   expect(state.beacons).toEqual([]);
-  const standardHtml = await (await request.get(urls.standard)).text();
-  const bundle = standardHtml.match(/\/metrics\/_basicrum\/boomerang-[\w.]+\.js/)[0];
+  const nonConsentHtml = await (await request.get(urls["non-consent"])).text();
+  const bundle = nonConsentHtml.match(/\/metrics\/_basicrum\/boomerang-[\w.]+\.js/)[0];
   expect((await request.get(new URL(bundle, urls.disabled).href)).status()).toBe(404);
   expect(state.errors).toEqual([]);
 });
@@ -159,7 +433,7 @@ test("the original iframe fallback still initializes the real bundle", async ({ 
       return token === "preload" ? false : supports.call(this, token);
     };
   });
-  await page.goto(urls.standard);
+  await page.goto(urls["non-consent"]);
   await expect.poll(() => state.beacons.length).toBeGreaterThan(0);
   expect(state.beacons[0]).toMatchObject({ p_gen: "astro", sm: "i" });
   expect(state.bundleRequests()).toBe(1);

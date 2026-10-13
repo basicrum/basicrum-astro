@@ -1,3 +1,6 @@
+import type { AstroIntegration } from "astro";
+import type { BasicrumOptions } from "./core/index.js";
+export type { BasicrumOptions, LoaderMode } from "./core/index.js";
 import { createInstallation, normalizeOptions } from "./core/index.js";
 
 /**
@@ -5,15 +8,24 @@ import { createInstallation, normalizeOptions } from "./core/index.js";
  *
  * This file is the Astro adapter. All Boomerang, loader and option logic
  * lives in ./core/ so that it can be reused by other frameworks.
- * @param {import('./index.d.ts').BasicrumOptions} options
- * @returns {import('astro').AstroIntegration}
  */
-export default function basicrum(options) {
+export default function basicrum(options: BasicrumOptions): AstroIntegration {
   const settings = normalizeOptions(options);
   return {
     name: "@basicrum/astro",
     hooks: {
       "astro:config:setup": ({ config, command, injectScript, injectRoute }) => {
+        // A shared preset and the site config can both add this integration.
+        // Two registrations would let registration order pick the loader, so
+        // refuse the configuration instead of guessing.
+        const registrations = (config.integrations ?? [])
+          .filter((integration) => integration && integration.name === "@basicrum/astro").length;
+        if (registrations > 1) {
+          throw new Error(
+            `[basicrum] @basicrum/astro is registered ${registrations} times. Keep exactly one basicrum() entry ` +
+            "in astro.config; check shared presets and the site configuration.",
+          );
+        }
         if (!(settings.enabled ?? command === "build")) return;
 
         // Injected route patterns are relative to Astro's base; browser URLs are not.

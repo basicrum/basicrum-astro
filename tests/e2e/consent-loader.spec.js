@@ -71,9 +71,12 @@ test.describe("consent loader", () => {
     await site.visit();
     await site.grant();
     await site.waitForBeacon();
+    await site.seedMeasurementCookies();
+    expect(await site.measurementCookies()).toEqual(["BA", "RT"]);
 
     await site.deny();
     await site.grant();
+    await site.replayBootstrap();
     await site.settle();
 
     expect(await site.state()).toMatchObject({ boomerangVersion: "1.815.60", configured: false });
