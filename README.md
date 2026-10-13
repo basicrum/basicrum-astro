@@ -188,8 +188,8 @@ For local setup, examples, testing and release instructions, see
 according to [SECURITY.md](./SECURITY.md), not through a public issue.
 
 Basicrum-owned code is available under the
-[GNU General Public License version 2 or later](./LICENSE). The vendored
-Boomerang build retains its BSD license; see
+[MIT License](./LICENSE). The vendored Boomerang build and original loader
+snippet retain their BSD license; see
 [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
 
 ## References

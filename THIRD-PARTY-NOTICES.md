@@ -1,7 +1,8 @@
 # Third-party notices and shared assets
 
-Basicrum integration code and the Basicrum loader wrappers are distributed under
-GPL-2.0-or-later. See `LICENSE`.
+Basicrum integration code and Basicrum-authored loader wrapper code are
+distributed under the MIT License. See `LICENSE`. The Boomerang build and
+original loader snippet retain their BSD license, as described below.
 
 ## Basicrum loaders
 
@@ -9,6 +10,12 @@ The standard and consent loaders in `vendor/loaders/` are copied without changes
 from `basicrum-wordpress/plugins/basicrum/assets/js/loaders/`, at WordPress commit
 `0940a1fb27f3e199d35696f0add9561c8c73c880`. Both readable and minified variants are
 included. SHA-256 digests are recorded in `vendor/provenance.json`.
+
+These files include Boomerang Loader Snippet version 15 from
+[Akamai Boomerang](https://github.com/akamai/boomerang), including the standard
+loader block inside the consent wrapper. The original snippet is covered by the
+BSD license in `vendor/boomerang/LICENSE.txt`. Basicrum's wrapper code does not
+change the license that applies to the original snippet.
 
 ## Boomerang 1.815.60
 
@@ -26,5 +33,4 @@ uses Node 12, the committed dependency lockfile, and
 `grunt clean build --build-flavor=cutting-edge --build-number=815`.
 
 The fork includes Basicrum's configuration bootstrap and changes to the metric
-plugins. Its BSD license remains applicable; it is not relicensed under the
-integration's GPL license.
+plugins. Its BSD license remains applicable.

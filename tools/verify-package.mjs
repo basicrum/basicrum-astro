@@ -70,6 +70,14 @@ try {
   run("npm", ["install", "--no-audit", "--no-fund", "--loglevel=error", `astro@${astroVersion}`, tarball], consumer);
   const installed = join(consumer, "node_modules", "@basicrum", "astro");
   const installedPackage = JSON.parse(readFileSync(join(installed, "package.json"), "utf8"));
+  check(installedPackage.license === "MIT", "published package does not declare the MIT license");
+  for (const notice of ["LICENSE", "THIRD-PARTY-NOTICES.md", "vendor/boomerang/LICENSE.txt"]) {
+    const installedNotice = join(installed, notice);
+    check(existsSync(installedNotice), `published package is missing ${notice}`);
+    if (existsSync(installedNotice)) {
+      check(readFileSync(installedNotice).equals(readFileSync(join(root, notice))), `published ${notice} differs from the repository`);
+    }
+  }
   check(!existsSync(join(installed, "src")), "published package contains src/");
   check(!existsSync(join(installed, "tests")), "published package contains tests/");
   for (const entry of [".", "./client"]) {

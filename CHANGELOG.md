@@ -7,6 +7,16 @@ entry must match `version` in `package.json`; `npm run conventions` checks it.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-13
+
+### Changed
+
+- License Basicrum-owned integration and loader wrapper code under MIT instead
+  of GPL-2.0-or-later, matching the Basicrum Magento integration. Preserve the
+  BSD license for the vendored Boomerang build and original loader snippet.
+- Verify that the published package declares MIT and includes the license and
+  third-party notices unchanged.
+
 ## [0.1.0] - 2026-10-13
 
 Initial release.
@@ -57,5 +67,6 @@ Initial release.
 - Registering the integration more than once now fails configuration with an
   actionable error instead of silently keeping the first registration.
 
-[Unreleased]: https://github.com/basicrum/basicrum-astro/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/basicrum/basicrum-astro/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/basicrum/basicrum-astro/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/basicrum/basicrum-astro/releases/tag/v0.1.0

@@ -1,6 +1,6 @@
 {
   "name": "@basicrum/astro",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Basicrum real user monitoring for Astro with non-consent and consent-controlled loaders.",
   "homepage": "https://github.com/basicrum/basicrum-astro#readme",
   "bugs": {
@@ -11,7 +11,7 @@
     "url": "git+https://github.com/basicrum/basicrum-astro.git"
   },
   "type": "module",
-  "license": "GPL-2.0-or-later",
+  "license": "MIT",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
