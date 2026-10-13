@@ -111,4 +111,9 @@ a non-root base; it needs network access. CI runs all of them on every push to
    environment in the repository settings to gate publication. Do not create
    the GitHub Release or publish manually.
    The 0.1.2 publish step also deprecates the former `@basicrum/astro` versions
-   through 0.1.1 after the renamed package is published.
+   through 0.1.1 after the renamed package is published, if the old package
+   still exists. A removed package does not block the release.
+   To recover a partially completed release, dispatch the Release workflow
+   from `main` with the existing tag. It checks out that tag, reruns all
+   verification, and checks that an already published npm archive matches
+   before completing the GitHub Release. Never move a published version's tag.
