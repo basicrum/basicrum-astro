@@ -17,9 +17,6 @@ From your Astro site's directory:
 npm install @basicrum/astro
 ```
 
-For local development, install a checkout with
-`npm install /absolute/path/to/basicrum-astro` instead.
-
 Add the integration to `astro.config.mjs`:
 
 ```js
@@ -57,10 +54,6 @@ head, after configuration and before Astro islands. Boomerang itself remains a
 separate same-origin asset under `/_basicrum/`, with a content hash in its filename.
 Astro's `base` setting is respected. The package does not copy files into your
 site's `public` directory or require the WordPress repository at runtime.
-
-If migrating from the earlier local API, rename `siteId` to `brumSiteId`,
-`beaconUrl` to `beaconEndpoint`, and `loader: "standard"` to
-`loader: "non-consent"`. The old names are rejected during configuration.
 
 ## Consent manager integration
 
@@ -184,95 +177,15 @@ attributes, so disable Cloudflare Rocket Loader for these pages if it rewrites
 script ordering. Do not move the loader into Partytown or defer it until island
 hydration.
 
-## Development
-
-```sh
-npm ci
-npx playwright install chromium
-npm test
-npm run verify:package
-npm run example:build
-npm run example:dev
-```
-
-`npm test` runs the repository conventions (`npm run conventions`: ASCII-only
-text, version metadata, Boomerang provenance), the TypeScript build and public
-API type checks, ESLint, strict package linting, the unit tests and the browser
-tests. Browser tests build local Astro fixtures with the real packaged
-Boomerang build and intercept all collector traffic; they never submit
-measurements to a production collector.
-`npm run lint:package` rebuilds the package and runs `publint` against the
-files selected by npm for publication. Warnings are treated as errors.
-`npm run verify:package` packs the package, lints that exact tarball with the
-same strict settings, installs the tarball into a
-temporary Astro consumer, checks the installed declarations, and builds both
-loader modes with a non-root base; it needs network access. Repository invariants
-and the release procedure are in [AGENTS.md](./AGENTS.md).
-
-Browser tests are two Playwright projects:
-
-- `npm run test:e2e` runs `tests/e2e/`: one readable workflow spec per loader,
-  in the style of the WordPress plugin's loader specs. `non-consent-loader.spec.js`
-  shows immediate collection and per-page types; `consent-loader.spec.js` walks
-  through inert start, denial, grant, withdrawal, reload and replaying the
-  stored decision on the next page. Start here to understand what the
-  integration does.
-- `npm run test:integration` runs `tests/browser/`: SSR, dev server,
-  `ClientRouter` swaps, the delayed beacon, download races, forced bootstrap
-  replay, and unload beacons captured by a local collector.
-
-The example is disabled until both `BASICRUM_SITE_ID` and `BASICRUM_BEACON_URL` are
-set in the process environment. Its consent buttons are demonstration controls,
-not a production consent manager.
-
-### Package layout
-
-Implementation source lives in `src/` as TypeScript. `npm run build` cleans
-`dist/` and generates JavaScript plus `.d.ts` declarations. The public package
-exports point to `dist/`; npm includes that output and `vendor/`, alongside the
-package metadata, README and license notices. `npm ci` and `npm pack` build
-through the `prepare` lifecycle. Generated output is not committed.
-
-`src/env.d.ts` is a small ambient declaration for Vite's `?raw` imports; it is
-not a manually maintained copy of our API. Source imports use `.js` extensions
-because those are the filenames emitted by TypeScript.
-
-The source is split along the line where a future package boundary would go:
-
-| Path | Depends on | Purpose |
-| --- | --- | --- |
-| `src/core/` + `vendor/` | Node only | Options, bootstrap script, asset catalogue, consent helper, Boomerang and loaders. No Astro imports. |
-| `src/index.ts` | `src/core/index.ts`, Astro | The integration: reads Astro's base and command, injects the route and head script. |
-| `src/client.ts` | `src/core/consent.ts` | Browser entry re-exporting `setConsent()`. |
-| `src/boomerang-endpoint.ts` | Vite `?raw` | Astro route serving the bundle. |
-
-Adapter files import the core only through `src/core/index.ts` and
-`src/core/consent.ts`. Unit tests parse every import, re-export and dynamic
-import in TypeScript source (including type-only imports) and fail if either
-side crosses the boundary.
-`tests/unit/core.test.js` covers the core and `tests/unit/integration.test.js`
-covers the Astro adapter. Read [`src/core/README.md`](./src/core/README.md)
-for the checklist to extract the core into `@basicrum/boomerang-core`.
-
-The `vendor/` files are copied unchanged from the WordPress plugin. Their origin
-and SHA-256 digests are recorded in `vendor/provenance.json`. Update those files,
-the manifest, notices, and versioned asset references together when upgrading;
-run the consent withdrawal tests before releasing.
-
 ## Releases
 
 Versions follow Semantic Versioning and are recorded in [CHANGELOG.md](./CHANGELOG.md).
-A release is a `vX.Y.Z` tag on `main` whose version matches `package.json`.
-Pushing the tag runs the Release workflow: it verifies the version, runs every
-check including the packed-consumer build, attaches the npm tarball and its
-SHA-256 to a GitHub Release, and publishes to npm only when the `NPM_TOKEN`
-repository secret is configured.
 
 ## Contributing and security
 
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. Report
-suspected vulnerabilities privately according to [SECURITY.md](./SECURITY.md),
-not through a public issue.
+For local setup, examples, testing and release instructions, see
+[CONTRIBUTING.md](./CONTRIBUTING.md). Report suspected vulnerabilities privately
+according to [SECURITY.md](./SECURITY.md), not through a public issue.
 
 Basicrum-owned code is available under the
 [GNU General Public License version 2 or later](./LICENSE). The vendored
