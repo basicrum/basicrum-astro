@@ -69,8 +69,12 @@ The bootstrap's serialized function must remain self-contained and ES5 syntax
 compatible after compilation. Do not introduce runtime imports or compiler
 helpers into it, or bundle/minify it without updating the regression checks.
 
-TypeScript is pinned to 6.0.3 while typescript-eslint 8.71.0 supports versions
-below 6.1.0. Upgrade them together to a supported combination.
+TypeScript stays on 6.0.3 while the installed typescript-eslint supports versions
+below 6.1.0. Upgrade them together to a supported combination, including the
+build scripts and tests that use the compiler API. Keep `@types/node` on the
+Node.js 22 line to match the oldest supported runtime in `.nvmrc`.
+Dependabot skips major updates for these two packages; revisit those rules when
+the compiler tooling or minimum Node.js version changes.
 
 Follow the permanent conventions in [AGENTS.md](AGENTS.md): ASCII-only text,
 exactly pinned development dependencies and GitHub Actions, synchronized

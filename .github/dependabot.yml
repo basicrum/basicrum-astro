@@ -9,6 +9,14 @@ updates:
       time: "04:30"
       timezone: Europe/Berlin
     open-pull-requests-limit: 5
+    ignore:
+      # Keep types aligned with the oldest supported Node.js major (.nvmrc).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # Revisit when typescript-eslint supports TypeScript 7 and the build
+      # scripts and module-boundary tests support its compiler and API.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
