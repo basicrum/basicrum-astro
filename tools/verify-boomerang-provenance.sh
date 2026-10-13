@@ -1,5 +1,5 @@
 #!/bin/sh
-# The vendored Boomerang build, the version constant in src/core/assets.js,
+# The vendored Boomerang build, the version constant in src/core/assets.ts,
 # the documented source commit in THIRD-PARTY-NOTICES.md and the SHA-256
 # manifest in vendor/provenance.json must all agree.
 
@@ -25,8 +25,8 @@ header_commit=$( printf '%s\n' "$header_line" | grep -oE '[0-9a-f]{40}' | head -
 file_version=$( basename "$bundle" | sed -n 's/^boomerang-\([0-9.]*\)\..*/\1/p' )
 [ "$header_version" = "$file_version" ] || fail "Boomerang version mismatch: header $header_version, file name $file_version."
 
-code_version=$( sed -n 's/^export const BOOMERANG_VERSION = "\([^"]*\)";$/\1/p' src/core/assets.js )
-[ "$code_version" = "$file_version" ] || fail "BOOMERANG_VERSION in src/core/assets.js ($code_version) does not match the vendored file ($file_version)."
+code_version=$( sed -n 's/^export const BOOMERANG_VERSION = "\([^"]*\)";$/\1/p' src/core/assets.ts )
+[ "$code_version" = "$file_version" ] || fail "BOOMERANG_VERSION in src/core/assets.ts ($code_version) does not match the vendored file ($file_version)."
 
 grep -Fq "$header_commit" THIRD-PARTY-NOTICES.md || fail "THIRD-PARTY-NOTICES.md does not mention Boomerang source commit $header_commit."
 grep -Fq "Boomerang $file_version" THIRD-PARTY-NOTICES.md || fail "THIRD-PARTY-NOTICES.md does not mention Boomerang $file_version."

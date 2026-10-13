@@ -47,7 +47,7 @@ jobs:
           BASICRUM_RELEASE_TAG: ${{ github.ref_name }}
         run: npm run conventions
 
-      - name: Check TypeScript declarations and lint
+      - name: Build and check TypeScript and lint
         run: |
           npm run typecheck
           npm run lint
@@ -60,13 +60,14 @@ jobs:
           npm run test:unit
           npm run test:browser
 
-      - name: Pack, install into a consumer and build
+      - name: Lint tarball, verify installed types and both loader builds
         run: npm run verify:package
 
-      - name: Build release tarball and checksum
+      - name: Build and lint release tarball, then checksum
         run: |
           mkdir -p release
           tarball=$(npm pack --pack-destination release --silent | tail -n 1)
+          npm exec --no -- publint "release/$tarball" --strict
           (cd release && shasum -a 256 "$tarball" > "$tarball.sha256")
           cat "release/$tarball.sha256"
 
