@@ -7,16 +7,18 @@ An Astro integration that installs the existing Basicrum Boomerang loaders and
 self-hosts the matching Boomerang bundle. Choose either immediate collection or
 collection controlled by your site's consent manager.
 
-This package currently targets Astro 7 and Node.js 22.12 or later. The source
-lives on GitHub; it has not been published to npm yet.
+This package targets Astro 7 and Node.js 22.12 or later.
 
-## Install locally
+## Install
 
 From your Astro site's directory:
 
 ```sh
-npm install /absolute/path/to/basicrum-astro
+npm install @basicrum/astro
 ```
+
+For local development, install a checkout with
+`npm install /absolute/path/to/basicrum-astro` instead.
 
 Add the integration to `astro.config.mjs`:
 
