@@ -45,7 +45,7 @@
     "globals": "17.13.0",
     "publint": "0.3.25",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.0"
+    "typescript-eslint": "8.71.1"
   },
   "scripts": {
     "test": "npm run conventions && npm run typecheck && npm run lint && npm run lint:package && npm run test:unit && npm run test:browser",
