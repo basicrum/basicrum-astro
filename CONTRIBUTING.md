@@ -14,7 +14,11 @@ provenance of the vendored Boomerang build.
 
 ## Local setup
 
-Node.js 22.12 or later is required. Clone the repository and install dependencies:
+The repository's pinned Astro version requires Node.js 22.23.4 or later.
+Use the latest Node.js 22 patch (`nvm install` and `nvm use` read `.nvmrc`),
+or Node.js 24. CI and release jobs check for the latest patch instead of relying
+on the runner's cached Node.js version. Clone the repository and install
+dependencies:
 
 ```bash
 git clone https://github.com/basicrum/basicrum-astro.git
